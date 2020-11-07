@@ -3,13 +3,14 @@ Adapted from https://github.com/chingyaoc/VQA-tensorflow
 """
 from random import shuffle, seed
 import sys
-import argparse
 import numpy as np
+import argparse
 import h5py
 from nltk.tokenize import word_tokenize
 import json
 
 import re
+import tensorflow as tf
 
 def tokenize(sentence):
     return [i for i in re.split(r"([-.\"',:? !\$#@~()*&\^%;\[\]/\\\+<>\n=])", sentence) if
@@ -125,9 +126,6 @@ def encode_answer(imgs, atoi):
         ans_arrays[i] = atoi[img['ans']]
 
     return ans_arrays
-
-
-
 
 def filter_question(imgs, atoi):
     new_imgs = []

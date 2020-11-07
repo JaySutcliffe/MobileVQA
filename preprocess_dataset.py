@@ -50,7 +50,7 @@ def main(params):
 
             question = val_ques['questions'][i]['question']
 
-            test.append({'ques_id': question_id, 'img_path': image_path, 'question': question})
+            test.append({'ques_id': question_id, 'img_path': image_path, 'question': question, 'ans': ans})
     else:
         print('Loading annotations and questions...')
         train_anno = json.load(open(train_annotations_file, 'r'))
@@ -84,12 +84,13 @@ def main(params):
 
         subtype = 'test2015'
         for i in range(len(test_ques['questions'])):
+            ans = val_anno['annotations'][i]['multiple_choice_answer']
             question_id = test_ques['questions'][i]['question_id']
             image_path = imdir.format(subtype, test_ques['questions'][i]['image_id'])
 
             question = test_ques['questions'][i]['question']
 
-            test.append({'ques_id': question_id, 'img_path': image_path, 'question': question})
+            test.append({'ques_id': question_id, 'img_path': image_path, 'question': question, 'ans': ans})
 
     print('Training sample %d, Testing sample %d...' % (len(train), len(test)))
 
@@ -107,6 +108,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     params = vars(args)
-    print("Passed parameters are:")
-    print(json.dump(params, indent=2))
     main(params)
