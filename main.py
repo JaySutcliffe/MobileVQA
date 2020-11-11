@@ -1,136 +1,54 @@
-import json
 import numpy as np
-import h5py
 import tensorflow as tf
-from tensorflow import keras
-
-
-def right_align(seq, lengths):
-    v = np.zeros(np.shape(seq))
-    N = np.shape(seq)[1]
-    for i in range(np.shape(seq)[0]):
-        v[i][N - lengths[i]:N - 1] = seq[i][0:lengths[i] - 1]
-    return v
+from data_generator import VQA_data_generator
 
 
 class Lstm_cnn_trainer():
-    # The size of a question and inage
+    # The size of a question and image
     max_question_length = 26
     image_width = 224
     image_height = 224
+    vocabulary_size = 12915
 
     image_inputs = None
     question_inputs = None
-
-    # Input files from preprocessing
-    input_json = None
-    input_h5 = None
-
-    # For training
-    train_dataset = {}
-    train_data = {}
-
-    # For testing
-    test_dataset = {}
-    test_data = {}
-    test_input_json = None
-    test_input_questions_h5 = None
-
     model = None
+    train_generator = None
+    val_generator = None
 
     # Model configuration variables
+    batch_size = 10
     embedding_size = 200
     rnn_size = 512
-    rnn_layer_count = 2
-    dim_image = 4096
     dense_hidden_size = 1024
     output_size = 1000
-    img_norm = 1
-
-    def get_data(self):
-        self.train_dataset = {}
-        self.train_data = {}
-        # load json file
-        print('loading json file...')
-        with open(self.input_json) as data_file:
-            data = json.load(data_file)
-        for key in data.keys():
-            self.train_dataset[key] = data[key]
-
-        self.train_dataset['images'] = np.vectorize(
-            self.get_image_data)(self.train_dataset['unique_img_train'])
-
-        # load h5 file
-        print('loading h5 file...')
-        with h5py.File(self.input_h5, 'r') as hf:
-            tem = hf.get('ques_train')
-            self.train_data['question'] = np.array(tem) - 1
-
-            tem = hf.get('ques_length_train')
-            self.train_data['length_q'] = np.array(tem)
-
-            tem = hf.get('img_pos_train')
-            self.train_data['img_list'] = np.array(tem) - 1
-
-            tem = hf.get('answers')
-            self.train_data['answers'] = np.array(tem) - 1
-
-        print('question aligning')
-        self.train_data['question'] = right_align(self.train_data['question'],
-                                                  self.train_data['length_q'])
-
-        self.train_data['images'] = self.train_dataset['images'][self.train_data['img_list']]
-
-        print(self.train_data['images'])
-
-    def get_data_test(self):
-        self.test_dataset = {}
-        self.test_data = {}
-        # load json file
-        print('loading json file...')
-        with open(self.input_json) as data_file:
-            data = json.load(data_file)
-        for key in data.keys():
-            self.test_dataset[key] = data[key]
-
-        # load h5 file
-        print('loading h5 file...')
-        with h5py.File(self.input_h5, 'r') as hf:
-            tem = hf.get('ques_test')
-            self.test_data['question'] = np.array(tem) - 1
-
-            tem = hf.get('ques_length_test')
-            self.test_data['length_q'] = np.array(tem)
-
-            tem = hf.get('img_pos_test')
-            self.test_data['img_list'] = np.array(tem) - 1
-
-            tem = hf.get('question_id_test')
-            self.test_data['ques_id'] = np.array(tem)
-
-        print('question aligning')
-        self.test_data['question'] = right_align(
-            self.test_data['question'], self.test_data['length_q'])
-
 
     def create_image_processing_model(self):
         """
         Creates the image processing part of the VQA model
         :return: A Keras model with VGG19 CNN to extract image features
         """
-        return tf.keras.applications.VGG19(
-            include_top=True, weights='imagenet', input_tensor=self.image_inputs)
+        return tf.keras.Sequential([
+            tf.keras.applications.VGG19(
+                include_top=True, weights='imagenet', input_tensor=self.image_inputs),
+            # tf.math.l2_normalize(axis=None, epsilon=1e-12, name=None)
+        ])
 
     def create_question_processing_model(self):
         """
         Creates a model that performs question processing
         :return: A TensorFlow Keras model using bidirectional LSTM layers
         """
-        question_layers = tf.keras.layers.Embedding(input_dim=self.embedding_size,
-                                                    output_dim=self.rnn_size, mask_zero=True)(inputs)
-        question_layers = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(self.rnn_size))(question_layers)
-        outputs = tf.keras.layers.Dense(self.output_size, activation="relu")(question_layers)
-        return tf.keras.Model(inputs=self.question_inputs, outputs=outputs)
+        return tf.keras.models.Sequential([
+            self.question_inputs,
+            tf.keras.layers.Embedding(self.vocabulary_size,
+                                      input_length=self.max_question_length,
+                                      output_dim=self.embedding_size),
+            tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(self.rnn_size,
+                                                               return_sequences=True)),
+            tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(self.rnn_size)),
+            tf.keras.layers.Dense(self.output_size, activation='relu')
+        ])
 
     def create_model(self):
         """
@@ -142,8 +60,8 @@ class Lstm_cnn_trainer():
         linked = tf.keras.layers.multiply([image_model.output, question_model.output])
         outputs = tf.keras.layers.Dense(self.output_size, activation="softmax")(linked)
 
-        return keras.Model(inputs=[self.image_inputs, self.question_inputs], outputs=outputs,
-                           name=__class__.__name__ + "_model")
+        return tf.keras.Model(inputs=[self.image_inputs, self.question_inputs], outputs=outputs,
+                              name=__class__.__name__ + "_model")
 
     def train_model(self):
         """
@@ -154,18 +72,17 @@ class Lstm_cnn_trainer():
                            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                            metrics=['accuracy'])
 
-        self.model.fit(np.stack([self.train_data['questions'],
-                                 self.train_data['images']], axis=1),
-                       self.train_data['answers'], epochs=10)
+        self.model.fit_generator(generator=self.train_generator,
+                                 validation_data=self.val_generator,
+                                 use_multiprocessing=True,
+                                 workers=6)
 
     def __init__(self, input_json, input_h5):
         self.image_inputs = tf.keras.Input(shape=(self.image_width, self.image_height, 3))
-        self.question_inputs = tf.keras.Input(shape=(self.max_question_length))
+        self.question_inputs = tf.keras.Input(shape=(self.max_question_length,))
+        self.train_generator = VQA_data_generator(input_json, input_h5)
+        self.val_generator = VQA_data_generator(input_json, input_h5, train=False)
         self.model = self.create_model()
-
-        self.input_json = input_json
-        self.input_h5 = input_h5
-        self.get_data()
 
 
 if __name__ == '__main__':
