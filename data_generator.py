@@ -68,7 +68,7 @@ class VQA_data_generator(keras.utils.Sequence):
 
     def __len__(self):
         'Denotes the number of batches per epoch'
-        return int(np.floor(len(self.list_IDs) / self.batch_size))
+        return int(np.floor(len(self.__data['questions']) / self.batch_size))
 
     def __getitem__(self, idx):
         questions = self.__data['questions'][
@@ -78,10 +78,11 @@ class VQA_data_generator(keras.utils.Sequence):
         answers = self.__data['answers'][
                   idx * self.batch_size:(idx + 1) * self.batch_size]
 
-        images = np.array([preprocess_image(self.__dataset['unique_img_' + self.__mode][i])
-                  for i in image_list])
+        images = [preprocess_image(self.__dataset['unique_img_' + self.__mode][i])
+                  for i in image_list]
 
-        return np.array([images,questions]).T, answers
+        return [np.array(images), np.array(questions)], \
+               np.array(answers)
 
     def on_epoch_end(self):
         'Updates indexes after each epoch'
@@ -96,5 +97,5 @@ class VQA_data_generator(keras.utils.Sequence):
 
 
 if __name__ == '__main__':
-    vqa_gen = VQA_data_generator('data/data_prepro.json', 'data/data_prepro.h5')
-    print(vqa_gen.__getitem__(2)[0].shape)
+    vqa_gen = VQA_data_generator('data/data_prepro.json', 'data/data_prepro.h5', train=False)
+    print(vqa_gen.__getitem__(2))

@@ -42,7 +42,7 @@ def main(params):
             train.append(
                 {'ques_id': question_id, 'img_path': image_path, 'question': question, 'ans': ans})
 
-        subtype = 'val2014'
+        subtype = 'test2015'
         for i in range(len(val_anno['annotations'])):
             ans = val_anno['annotations'][i]['multiple_choice_answer']
             question_id = val_anno['annotations'][i]['question_id']

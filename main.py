@@ -1,4 +1,4 @@
-import numpy as np
+import sys
 import tensorflow as tf
 from data_generator import VQA_data_generator
 
@@ -10,8 +10,6 @@ class Lstm_cnn_trainer():
     image_height = 224
     vocabulary_size = 12915
 
-    image_inputs = None
-    question_inputs = None
     model = None
     train_generator = None
     val_generator = None
@@ -28,11 +26,15 @@ class Lstm_cnn_trainer():
         Creates the image processing part of the VQA model
         :return: A Keras model with VGG19 CNN to extract image features
         """
-        return tf.keras.Sequential([
-            tf.keras.applications.VGG19(
-                include_top=True, weights='imagenet', input_tensor=self.image_inputs),
-            # tf.math.l2_normalize(axis=None, epsilon=1e-12, name=None)
-        ])
+        model = tf.keras.applications.VGG19(
+            include_top=True,
+            weights='imagenet',
+            input_tensor=self.image_inputs)
+
+        norm = tf.keras.layers.LayerNormalization()(model.layers[-2].output)
+        outputs = tf.keras.layers.Dense(self.dense_hidden_size)(norm)
+        return tf.keras.Model(inputs=self.image_inputs, outputs=outputs,
+                              name=__class__.__name__ + "_model")
 
     def create_question_processing_model(self):
         """
@@ -47,7 +49,7 @@ class Lstm_cnn_trainer():
             tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(self.rnn_size,
                                                                return_sequences=True)),
             tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(self.rnn_size)),
-            tf.keras.layers.Dense(self.output_size, activation='relu')
+            tf.keras.layers.Dense(self.dense_hidden_size, activation='relu')
         ])
 
     def create_model(self):
@@ -63,27 +65,29 @@ class Lstm_cnn_trainer():
         return tf.keras.Model(inputs=[self.image_inputs, self.question_inputs], outputs=outputs,
                               name=__class__.__name__ + "_model")
 
-    def train_model(self):
+    def train_model(self, checkpoint_path):
         """
-
-        :return:
+        Trains the model and then outputs it to the file entered
         """
         self.model.compile(optimizer='adam',
                            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                            metrics=['accuracy'])
 
-        self.model.fit_generator(generator=self.train_generator,
-                                 validation_data=self.val_generator,
-                                 use_multiprocessing=True,
-                                 workers=6)
+        cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
+                                                         verbose=1)
+
+        self.model.fit(x=self.train_generator,
+                       validation_data=self.val_generator,
+                       callbacks=[cp_callback])
 
     def __init__(self, input_json, input_h5):
         self.image_inputs = tf.keras.Input(shape=(self.image_width, self.image_height, 3))
-        self.question_inputs = tf.keras.Input(shape=(self.max_question_length,))
+        self.question_inputs = tf.keras.Input(shape=(self.max_question_length))
         self.train_generator = VQA_data_generator(input_json, input_h5)
         self.val_generator = VQA_data_generator(input_json, input_h5, train=False)
         self.model = self.create_model()
 
 
 if __name__ == '__main__':
-    vqa = Lstm_cnn_trainer('data/data_prepro.json', 'data/data_prepro.h5')
+    vqa = Lstm_cnn_trainer(sys.argv[1], sys.argv[2])
+    vqa.train_model(sys.argv[3])
