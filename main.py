@@ -65,7 +65,7 @@ class Lstm_cnn_trainer():
         return tf.keras.Model(inputs=[self.image_inputs, self.question_inputs], outputs=outputs,
                               name=__class__.__name__ + "_model")
 
-    def train_model(self, checkpoint_path):
+    def train_model(self, checkpoint_path, save_path):
         """
         Trains the model and then outputs it to the file entered
         """
@@ -80,6 +80,8 @@ class Lstm_cnn_trainer():
                        validation_data=self.val_generator,
                        callbacks=[cp_callback])
 
+        self.model.save(save_path)
+
     def __init__(self, input_json, input_h5):
         self.image_inputs = tf.keras.Input(shape=(self.image_width, self.image_height, 3))
         self.question_inputs = tf.keras.Input(shape=(self.max_question_length))
@@ -90,4 +92,4 @@ class Lstm_cnn_trainer():
 
 if __name__ == '__main__':
     vqa = Lstm_cnn_trainer(sys.argv[1], sys.argv[2])
-    vqa.train_model(sys.argv[3])
+    vqa.train_model(sys.argv[3], sys.argv[4])

@@ -68,7 +68,8 @@ class VQA_data_generator(keras.utils.Sequence):
 
     def __len__(self):
         'Denotes the number of batches per epoch'
-        return int(np.floor(len(self.__data['questions']) / self.batch_size))
+        return 3
+        #return int(np.floor(len(self.__data['questions']) / self.batch_size))
 
     def __getitem__(self, idx):
         questions = self.__data['questions'][
