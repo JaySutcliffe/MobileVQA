@@ -15,7 +15,7 @@ class Lstm_cnn_trainer():
     val_generator = None
 
     # Model configuration variables
-    batch_size = 10
+    batch_size = 32
     embedding_size = 200
     rnn_size = 512
     dense_hidden_size = 1024
@@ -69,7 +69,7 @@ class Lstm_cnn_trainer():
 
         self.model.fit(x=self.train_generator,
                        validation_data=self.val_generator,
-                       epochs=10,
+                       epochs=30,
                        callbacks=[cp_callback])
 
         self.model.save(save_path)
