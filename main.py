@@ -1,7 +1,7 @@
 import sys
 import tensorflow as tf
 from data_generator import VQA_data_generator
-
+from cnn import get_normalised_vgg19_model
 
 class Lstm_cnn_trainer():
     # The size of a question and image
@@ -20,21 +20,6 @@ class Lstm_cnn_trainer():
     rnn_size = 512
     dense_hidden_size = 1024
     output_size = 1000
-
-    def create_image_processing_model(self):
-        """
-        Creates the image processing part of the VQA model
-        :return: A Keras model with VGG19 CNN to extract image features
-        """
-        model = tf.keras.applications.VGG19(
-            include_top=True,
-            weights='imagenet',
-            input_tensor=self.image_inputs)
-
-        norm = tf.keras.layers.LayerNormalization()(model.layers[-2].output)
-        outputs = tf.keras.layers.Dense(self.dense_hidden_size)(norm)
-        return tf.keras.Model(inputs=self.image_inputs, outputs=outputs,
-                              name=__class__.__name__ + "_model")
 
     def create_question_processing_model(self):
         """
@@ -57,9 +42,15 @@ class Lstm_cnn_trainer():
         Creates a VQA model combining an image and question model
         :return: LSTM+CNN VQA model
         """
-        image_model = self.create_image_processing_model()
+        if self.__train_cnn:
+            image_model = get_normalised_vgg19_model()(self.image_inputs)
+        else:
+            image_model = self.image_inputs
+
+        image_model_output = \
+            tf.keras.layers.Dense(self.dense_hidden_size, activation='relu')(image_model)
         question_model = self.create_question_processing_model()
-        linked = tf.keras.layers.multiply([image_model.output, question_model.output])
+        linked = tf.keras.layers.multiply([image_model_output, question_model.output])
         outputs = tf.keras.layers.Dense(self.output_size, activation="softmax")(linked)
 
         return tf.keras.Model(inputs=[self.image_inputs, self.question_inputs], outputs=outputs,
@@ -78,15 +69,20 @@ class Lstm_cnn_trainer():
 
         self.model.fit(x=self.train_generator,
                        validation_data=self.val_generator,
+                       epochs=10,
                        callbacks=[cp_callback])
 
         self.model.save(save_path)
 
-    def __init__(self, input_json, input_h5):
-        self.image_inputs = tf.keras.Input(shape=(self.image_width, self.image_height, 3))
-        self.question_inputs = tf.keras.Input(shape=(self.max_question_length))
+    def __init__(self, input_json, input_h5, train_cnn=False):
+        if train_cnn:
+            self.image_inputs = tf.keras.Input(shape=(self.image_width, self.image_height, 3))
+        else:
+            self.image_inputs = tf.keras.Input(shape=(4096,))
+        self.question_inputs = tf.keras.Input(shape=(self.max_question_length,))
         self.train_generator = VQA_data_generator(input_json, input_h5)
         self.val_generator = VQA_data_generator(input_json, input_h5, train=False)
+        self.__train_cnn = train_cnn
         self.model = self.create_model()
 
 

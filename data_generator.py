@@ -3,6 +3,7 @@ import tensorflow as tf
 from tensorflow import keras
 import h5py
 import json
+from cnn import get_normalised_vgg19_model
 
 
 def right_align(seq, lengths):
@@ -51,14 +52,15 @@ class VQA_data_generator(keras.utils.Sequence):
         self.__data['questions'] = right_align(self.__data['questions'],
                                                self.__data['length_q'])
 
-    def __init__(self, input_json, input_h5, train=True,
-                 batch_size=10, shuffle=True):
+    def __init__(self, input_json, input_h5, train=True, train_cnn=False,
+                 batch_size=32, shuffle=True):
         'Initialization'
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.input_json = input_json
         self.input_h5 = input_h5
         self.__train = True
+        self.__train_cnn = False
         if train:
             self.__mode = 'train'
         else:
@@ -66,24 +68,30 @@ class VQA_data_generator(keras.utils.Sequence):
         self.__get_data()
         self.on_epoch_end()
 
+        if not self.__train_cnn:
+            self.__cnn_model = get_normalised_vgg19_model()
+
     def __len__(self):
         'Denotes the number of batches per epoch'
-        return 3
-        #return int(np.floor(len(self.__data['questions']) / self.batch_size))
+        return int(np.floor(len(self.__data['questions']) / self.batch_size))
 
     def __getitem__(self, idx):
-        questions = self.__data['questions'][
-                    idx * self.batch_size:(idx + 1) * self.batch_size]
+        questions = np.array(self.__data['questions'][
+                             idx * self.batch_size:(idx + 1) * self.batch_size])
         image_list = self.__data['img_list'][
-                 idx * self.batch_size:(idx + 1) * self.batch_size]
-        answers = self.__data['answers'][
-                  idx * self.batch_size:(idx + 1) * self.batch_size]
+                     idx * self.batch_size:(idx + 1) * self.batch_size]
+        answers = np.array(self.__data['answers'][
+                           idx * self.batch_size:(idx + 1) * self.batch_size])
 
-        images = [preprocess_image(self.__dataset['unique_img_' + self.__mode][i])
-                  for i in image_list]
+        images = np.array([preprocess_image(self.__dataset['unique_img_' + self.__mode][i])
+                            for i in image_list])
 
-        return [np.array(images), np.array(questions)], \
-               np.array(answers)
+        if self.__train_cnn:
+            return [images, questions], answers
+
+        image_features = self.__cnn_model.predict(images)
+
+        return [image_features, questions], answers
 
     def on_epoch_end(self):
         'Updates indexes after each epoch'
@@ -98,5 +106,6 @@ class VQA_data_generator(keras.utils.Sequence):
 
 
 if __name__ == '__main__':
-    vqa_gen = VQA_data_generator('data/data_prepro.json', 'data/data_prepro.h5', train=False)
+    vqa_gen = VQA_data_generator('data/data_prepro.json', 'data/data_prepro.h5', train=False,
+                                 train_cnn=False)
     print(vqa_gen.__getitem__(2))
