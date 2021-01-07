@@ -8,9 +8,7 @@ import argparse
 import h5py
 from nltk.tokenize import word_tokenize
 import json
-
 import re
-import tensorflow as tf
 
 def tokenize(sentence):
     return [i for i in re.split(r"([-.\"',:? !\$#@~()*&\^%;\[\]/\\\+<>\n=])", sentence) if
@@ -123,7 +121,11 @@ def encode_answer(imgs, atoi):
     ans_arrays = np.zeros(N, dtype='uint32')
 
     for i, img in enumerate(imgs):
-        ans_arrays[i] = atoi[img['ans']]
+        ix = atoi.get(img['ans'])
+        if ix is None:
+            ans_arrays[i] = -1 # default value to -1 if not present
+        else:
+            ans_arrays[i] = ix
 
     return ans_arrays
 
@@ -162,7 +164,7 @@ def main(params):
     atoi = {w: i + 1 for i, w in enumerate(top_ans)}
     itoa = {i + 1: w for i, w in enumerate(top_ans)}
 
-    # filter question, which isn't in the top answers.
+    # filter question, which isn't in the top answers
     imgs_train = filter_question(imgs_train, atoi)
 
     seed(123)  # make reproducible
@@ -188,14 +190,16 @@ def main(params):
     unique_img_test, img_pos_test = get_unqiue_img(imgs_test)
 
     # get the answer encoding.
-    A = encode_answer(imgs_train, atoi)
+    A_train = encode_answer(imgs_train, atoi)
+    A_test = encode_answer(imgs_test, atoi)
 
     # create output h5 file for training set.
     N = len(imgs_train)
     f = h5py.File(params['output_h5'], "w")
     f.create_dataset("ques_train", dtype='uint32', data=ques_train)
     f.create_dataset("ques_length_train", dtype='uint32', data=ques_length_train)
-    f.create_dataset("answers", dtype='uint32', data=A)
+    f.create_dataset("ans_train", dtype='uint32', data=A_train)
+    f.create_dataset("ans_test", dtype='uint32', data=A_test)
     f.create_dataset("question_id_train", dtype='uint32', data=question_id_train)
     f.create_dataset("img_pos_train", dtype='uint32', data=img_pos_train)
 
@@ -238,7 +242,7 @@ if __name__ == "__main__":
                         help='number of test images (to withold until very very end)')
     parser.add_argument('--token_method', default='nltk', help='token method, nltk is much more slower.')
 
-    parser.add_argument('--batch_size', default=10, type=int)
+    parser.add_argument('--batch_size', default=32, type=int)
 
     args = parser.parse_args()
     params = vars(args)  # convert to ordinary dict

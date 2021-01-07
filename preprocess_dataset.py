@@ -13,13 +13,22 @@ def main(params):
 
     train = []
     test = []
-    imdir = params['dir'] + '/{0}/COCO_{0}_{1:012d}.jpg'
+    imdir = params['dest'] + '/{0}/COCO_{0}_{1:012d}.jpg'
 
-    train_annotations_file = params['dir'] + '/v2_mscoco_train2014_annotations.json'
-    val_annotations_file = params['dir'] + '/v2_mscoco_val2014_annotations.json'
-    train_questions_file = params['dir'] + '/v2_OpenEnded_mscoco_train2014_questions.json'
-    val_questions_file = params['dir'] + '/v2_OpenEnded_mscoco_val2014_questions.json'
-    test_questions_file = params['dir'] + '/v2_Questions_Test_mscoco/v2_OpenEnded_mscoco_test2015_questions'
+    v2 = False
+
+    if v2:
+        train_annotations_file = params['dir'] + '/v2_mscoco_train2014_annotations.json'
+        val_annotations_file = params['dir'] + '/v2_mscoco_val2014_annotations.json'
+        train_questions_file = params['dir'] + '/v2_OpenEnded_mscoco_train2014_questions.json'
+        val_questions_file = params['dir'] + '/v2_OpenEnded_mscoco_val2014_questions.json'
+        test_questions_file = params['dir'] + '/v2_Questions_Test_mscoco/v2_OpenEnded_mscoco_test2015_questions'
+    else:
+        train_annotations_file = params['dir'] + '/mscoco_train2014_annotations.json'
+        val_annotations_file = params['dir'] + '/mscoco_val2014_annotations.json'
+        train_questions_file = params['dir'] + '/OpenEnded_mscoco_train2014_questions.json'
+        val_questions_file = params['dir'] + '/OpenEnded_mscoco_val2014_questions.json'
+        test_questions_file = params['dir'] + '/Questions_Test_mscoco/v2_OpenEnded_mscoco_test2015_questions'
 
 
     if params['split'] == 1:
@@ -42,7 +51,7 @@ def main(params):
             train.append(
                 {'ques_id': question_id, 'img_path': image_path, 'question': question, 'ans': ans})
 
-        subtype = 'test2015'
+        subtype = 'val2014'
         for i in range(len(val_anno['annotations'])):
             ans = val_anno['annotations'][i]['multiple_choice_answer']
             question_id = val_anno['annotations'][i]['question_id']
@@ -94,9 +103,12 @@ def main(params):
 
     print('Training sample %d, Testing sample %d...' % (len(train), len(test)))
 
-    json.dump(train, open('data/vqa_raw_train.json', 'w'))
-    json.dump(test, open('data/vqa_raw_test.json', 'w'))
-
+    if v2:
+        json.dump(train, open('data/vqa_raw_train.json', 'w'))
+        json.dump(test, open('data/vqa_raw_test.json', 'w'))
+    else:
+        json.dump(train, open('data/VQAv1/vqa_raw_train.json', 'w'))
+        json.dump(test, open('data/VQAv1/vqa_raw_test.json', 'w'))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -104,7 +116,10 @@ if __name__ == "__main__":
     parser.add_argument('--split', default=1, type=int,
                         help='Train on Train and test on Val, 2: train on Train+Val and test on Test')
     parser.add_argument('--dir', default=".", type=str,
-                        help='The parent directory storing all VQAv2 related files and directories')
+                        help='The parent directory storing all VQA related files and directories')
+    parser.add_argument('--dest', default=".", type=str,
+                        help='The parent directory storing all VQA related files and directories'
+                             'when training')
 
     args = parser.parse_args()
     params = vars(args)

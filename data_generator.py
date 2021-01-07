@@ -1,9 +1,8 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow import keras
 import h5py
 import json
-from cnn import get_normalised_vgg19_model
+from cnn import preprocess_image, get_normalised_vgg19_model
 
 
 def right_align(seq, lengths):
@@ -14,14 +13,7 @@ def right_align(seq, lengths):
     return v
 
 
-def preprocess_image(image_path):
-    image = tf.keras.preprocessing.image.load_img(
-        image_path, target_size=(224, 224))
-    image_array = tf.keras.preprocessing.image.img_to_array(image)
-    return tf.keras.applications.vgg19.preprocess_input(image_array)
-
-
-class VQA_data_generator(keras.utils.Sequence):
+class VQA_data_generator(tf.keras.utils.Sequence):
     """Generates data for Keras"""
 
     def __get_data(self):
@@ -53,27 +45,32 @@ class VQA_data_generator(keras.utils.Sequence):
                                                self.__data['length_q'])
 
     def __init__(self, input_json, input_h5, train=True, train_cnn=False,
-                 batch_size=32, shuffle=True):
+                 batch_size=32, shuffle=True, feature_file=None):
         'Initialization'
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.input_json = input_json
         self.input_h5 = input_h5
         self.__train = True
-        self.__train_cnn = False
+        self.__train_cnn = train_cnn
         if train:
             self.__mode = 'train'
         else:
             self.__mode = 'test'
         self.__get_data()
-        self.on_epoch_end()
+        #self.on_epoch_end()
 
+        self.__unique_features = None
         if not self.__train_cnn:
-            self.__cnn_model = get_normalised_vgg19_model()
+            if feature_file is None:
+                self.__cnn_model = get_normalised_vgg19_model()
+            else:
+                self.__unique_features = np.load(feature_file)
 
     def __len__(self):
         'Denotes the number of batches per epoch'
-        return int(np.floor(len(self.__data['questions']) / self.batch_size))
+        #return int(np.floor(len(self.__data['questions']) / self.batch_size))
+        return 3
 
     def __getitem__(self, idx):
         questions = np.array(self.__data['questions'][
@@ -83,13 +80,21 @@ class VQA_data_generator(keras.utils.Sequence):
         answers = np.array(self.__data['answers'][
                            idx * self.batch_size:(idx + 1) * self.batch_size])
 
-        images = np.array([preprocess_image(self.__dataset['unique_img_' + self.__mode][i])
-                            for i in image_list])
-
         if self.__train_cnn:
-            return [images, questions], answers
+            images_preprocessed = np.array([preprocess_image(
+                self.__dataset['unique_img_' + self.__mode][i])
+                for i in image_list])
+            return [images_preprocessed, questions], answers
 
-        image_features = self.__cnn_model.predict(images)
+        if self.__unique_features is None:
+            images_preprocessed = np.array([preprocess_image(
+                self.__dataset['unique_img_' + self.__mode][i])
+                for i in image_list])
+            image_features = self.__cnn_model.predict(images_preprocessed)
+        else:
+            image_features = np.array(
+                [self.__unique_features[i] for i in image_list])
+            image_features = image_features.reshape((image_features.shape[0], -1))
 
         return [image_features, questions], answers
 
@@ -106,6 +111,7 @@ class VQA_data_generator(keras.utils.Sequence):
 
 
 if __name__ == '__main__':
-    vqa_gen = VQA_data_generator('data/data_prepro.json', 'data/data_prepro.h5', train=False,
-                                 train_cnn=False)
-    print(vqa_gen.__getitem__(2))
+    vqa_gen = VQA_data_generator('data/data_prepro.json', 'data/data_prepro.h5', train=True,
+                                 train_cnn=False, feature_file='D:/Part2Project/train2.npy')
+    [image_features, questions], answers = vqa_gen.__getitem__(0)
+    print(questions[0])
