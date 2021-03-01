@@ -10,9 +10,11 @@ from nltk.tokenize import word_tokenize
 import json
 import re
 
+
 def tokenize(sentence):
     return [i for i in re.split(r"([-.\"',:? !\$#@~()*&\^%;\[\]/\\\+<>\n=])", sentence) if
-            i != '' and i != ' ' and i != '\n'];
+            i != '' and i != ' ' and i != '\n']
+
 
 def prepro_question(imgs, params):
     # preprocess all the question
@@ -123,11 +125,12 @@ def encode_answer(imgs, atoi):
     for i, img in enumerate(imgs):
         ix = atoi.get(img['ans'])
         if ix is None:
-            ans_arrays[i] = -1 # default value to -1 if not present
+            ans_arrays[i] = -1  # default value to -1 if not present
         else:
             ans_arrays[i] = ix
 
     return ans_arrays
+
 
 def filter_question(imgs, atoi):
     new_imgs = []
@@ -139,7 +142,7 @@ def filter_question(imgs, atoi):
     return new_imgs
 
 
-def get_unqiue_img(imgs):
+def get_unique_img(imgs):
     count_img = {}
     N = len(imgs)
     img_pos = np.zeros(N, dtype='uint32')
@@ -155,6 +158,23 @@ def get_unqiue_img(imgs):
     return unique_img, img_pos
 
 
+def answers_to_strings(data, atoi):
+    strings = []
+    max_length = 0
+    for i in range(0, len(data)):
+        answers = data[i]['answers']
+        string = ""
+        for answer, count in answers.items():
+            ix = atoi.get(answer)
+            if ix is not None:
+                string = string + str(ix) + "," + str(count) + ";"
+
+        strings.append(np.string_(string[:-1]))
+        if len(string) - 1 > max_length:
+            max_length = len(string) - 1
+    return strings, max_length
+
+
 def main(params):
     imgs_train = json.load(open(params['input_train_json'], 'r'))
     imgs_test = json.load(open(params['input_test_json'], 'r'))
@@ -165,7 +185,8 @@ def main(params):
     itoa = {i + 1: w for i, w in enumerate(top_ans)}
 
     # filter question, which isn't in the top answers
-    imgs_train = filter_question(imgs_train, atoi)
+    if params['filter']:
+        imgs_train = filter_question(imgs_train, atoi)
 
     seed(123)  # make reproducible
     shuffle(imgs_train)  # shuffle the order
@@ -186,27 +207,32 @@ def main(params):
     ques_test, ques_length_test, question_id_test = encode_question(imgs_test, params, wtoi)
 
     # get the unique image for train and test
-    unique_img_train, img_pos_train = get_unqiue_img(imgs_train)
-    unique_img_test, img_pos_test = get_unqiue_img(imgs_test)
+    unique_img_train, img_pos_train = get_unique_img(imgs_train)
+    unique_img_test, img_pos_test = get_unique_img(imgs_test)
 
     # get the answer encoding.
     A_train = encode_answer(imgs_train, atoi)
     A_test = encode_answer(imgs_test, atoi)
+
+    A_more_train, max_length_train = answers_to_strings(imgs_train, atoi)
+    A_more_test, max_length_test = answers_to_strings(imgs_test, atoi)
 
     # create output h5 file for training set.
     N = len(imgs_train)
     f = h5py.File(params['output_h5'], "w")
     f.create_dataset("ques_train", dtype='uint32', data=ques_train)
     f.create_dataset("ques_length_train", dtype='uint32', data=ques_length_train)
-    f.create_dataset("ans_train", dtype='uint32', data=A_train)
-    f.create_dataset("ans_test", dtype='uint32', data=A_test)
     f.create_dataset("question_id_train", dtype='uint32', data=question_id_train)
     f.create_dataset("img_pos_train", dtype='uint32', data=img_pos_train)
+    f.create_dataset("ans_train", dtype='uint32', data=A_train)
+    f.create_dataset("ans_more_train", dtype='S'+str(max_length_train), data=A_more_train)
 
     f.create_dataset("ques_test", dtype='uint32', data=ques_test)
     f.create_dataset("ques_length_test", dtype='uint32', data=ques_length_test)
     f.create_dataset("question_id_test", dtype='uint32', data=question_id_test)
     f.create_dataset("img_pos_test", dtype='uint32', data=img_pos_test)
+    f.create_dataset("ans_test", dtype='uint32', data=A_test)
+    f.create_dataset("ans_more_test", dtype='S'+str(max_length_test), data=A_more_test)
 
     f.close()
     print('wrote ', params['output_h5'])
@@ -225,10 +251,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # input json
-    parser.add_argument('--input_train_json', default='data/vqa_raw_train.json', help='input json file to process into hdf5')
-    parser.add_argument('--input_test_json', default='data/vqa_raw_test.json', help='input json file to process into hdf5')
-    parser.add_argument('--num_ans', default='1000', type=int,
+    parser.add_argument('--input_train_json', default='data/vqa_raw_train.json',
+                        help='input json file to process into hdf5')
+    parser.add_argument('--input_test_json', default='data/vqa_raw_test.json',
+                        help='input json file to process into hdf5')
+    parser.add_argument('--num_ans', default='3000', type=int,
                         help='number of top answers for the final classifications.')
+    parser.add_argument('--filter', default=False, type=bool,
+                        help='whether to filter out questions not in the top answers')
 
     parser.add_argument('--output_json', default='data/data_prepro.json', help='output json file')
     parser.add_argument('--output_h5', default='data/data_prepro.h5', help='output h5 file')

@@ -80,6 +80,8 @@ class Lstm_cnn_trainer():
         cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                          verbose=1)
 
+        print(self.model.summary())
+
         self.model.fit(x=self.train_generator,
                        validation_data=self.val_generator,
                        epochs=1,

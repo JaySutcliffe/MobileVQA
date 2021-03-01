@@ -13,6 +13,13 @@ def right_align(seq, lengths):
     return v
 
 
+def align(seq, lengths):
+  v = np.zeros((np.shape(seq)[0],26))
+  for i in range(np.shape(seq)[0]):
+    v[i][:lengths[i]] = seq[i][:lengths[i]]
+  return v
+
+
 class VQA_data_generator(tf.keras.utils.Sequence):
     """Generates data for Keras"""
 
@@ -34,18 +41,19 @@ class VQA_data_generator(tf.keras.utils.Sequence):
             temp = hf.get('img_pos_' + self.__mode)
             self.__data['img_list'] = np.array(temp) - 1
 
-            if self.__train:
-                temp = hf.get('answers')
-            else:
-                temp = hf.get('question_id_test')
-
+            temp = hf.get('ans_'+self.__mode)
             self.__data['answers'] = np.array(temp) - 1
+
+        self.__data['questions'] = self.__data['questions'][self.__data['answers'] < 1001]
+        self.__data['length_q'] = self.__data['length_q'][self.__data['answers'] < 1001]
+        self.__data['img_list'] = self.__data['img_list'][self.__data['answers'] < 1001]
+        self.__data['answers'] = self.__data['answers'][self.__data['answers'] < 1001]
 
         self.__data['questions'] = right_align(self.__data['questions'],
                                                self.__data['length_q'])
 
     def __init__(self, input_json, input_h5, train=True, train_cnn=False,
-                 batch_size=32, shuffle=True, feature_file=None):
+                 batch_size=500, shuffle=False, feature_file=None):
         'Initialization'
         self.batch_size = batch_size
         self.shuffle = shuffle
@@ -58,7 +66,7 @@ class VQA_data_generator(tf.keras.utils.Sequence):
         else:
             self.__mode = 'test'
         self.__get_data()
-        #self.on_epoch_end()
+        self.on_epoch_end()
 
         self.__unique_features = None
         if not self.__train_cnn:
@@ -69,8 +77,7 @@ class VQA_data_generator(tf.keras.utils.Sequence):
 
     def __len__(self):
         'Denotes the number of batches per epoch'
-        #return int(np.floor(len(self.__data['questions']) / self.batch_size))
-        return 3
+        return int(np.floor(len(self.__data['questions']) / self.batch_size))
 
     def __getitem__(self, idx):
         questions = np.array(self.__data['questions'][
@@ -111,7 +118,7 @@ class VQA_data_generator(tf.keras.utils.Sequence):
 
 
 if __name__ == '__main__':
-    vqa_gen = VQA_data_generator('data/data_prepro.json', 'data/data_prepro.h5', train=True,
-                                 train_cnn=False, feature_file='D:/Part2Project/train2.npy')
+    vqa_gen = VQA_data_generator('data/data_prepro.json', 'data/data_prepro.h5', train=False,
+                                 train_cnn=False, feature_file='D:/Part2Project/val.npy')
     [image_features, questions], answers = vqa_gen.__getitem__(0)
     print(questions[0])
