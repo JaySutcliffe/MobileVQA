@@ -6,6 +6,17 @@ import numpy as np
 
 
 def preprocess_image(model_number, image_path):
+    """
+    Performs the necessary preprocessing on an image,
+    dependent on the CNN being used
+
+    Parameters:
+        model_number (int): 1 for VGG19, 2 Mobilenet, 3 stripped MobileNet
+        image_path (str): The image location on disc
+
+    Returns:
+        Preprocessed image based on image path entered
+    """
     image = tf.keras.preprocessing.image.load_img(
         image_path, target_size=(224, 224))
     image_array = tf.keras.preprocessing.image.img_to_array(image)
@@ -18,7 +29,9 @@ def preprocess_image(model_number, image_path):
 def get_normalised_vgg19_model():
     """
     Creates the image processing part of the VQA model
-    :return: A Keras model with VGG19 CNN to extract image features
+
+    Returns:
+         A Keras model with VGG19 CNN to extract image features
     """
     model = tf.keras.applications.VGG19(
         include_top=True,
@@ -29,30 +42,61 @@ def get_normalised_vgg19_model():
 
 
 def get_mobilenet_v2():
+    """
+    Gets MobileNetv2 trained on ImageNet removing the final 1000
+    classifier layer so transfer learning can be performed.
+
+    Returns:
+         MobileNetv2 Keras Model with a 1x1x1280 output vector
+    """
     model = tf.keras.applications.MobileNetV2(include_top=True,
                                               weights='imagenet')
-
     outputs = model.layers[-2].output
     return tf.keras.Model(model.input, outputs=outputs)
 
 
 def get_mobilenet_v2_3by3():
+    """
+    Gets Mobilenetv2 but removes the two final layers leading to a 3x3x1280
+    output.
+
+    Returns:
+        MobileNetv2 with no top layers and a average pool added to produce
+        3x3x1280 features
+    """
     model = tf.keras.applications.MobileNetV2(include_top=False,
-                                              weights='imagenet')
+                                              weights='imagenet',
+                                              input_shape=(224, 224, 3))
     avg_pool = tf.keras.layers.AveragePooling2D(
-        pool_size=(2, 2), strides=None, padding='valid', data_format=None)
-    outputs = avg_pool(model.layers[-2].output)
+        pool_size=(3, 3), strides=2, padding='valid', data_format=None)
+    outputs = avg_pool(model.layers[-1].output)
     return tf.keras.Model(model.input, outputs=outputs)
 
-def preprocess_all_images(model_number, input_json, train, result):
+
+def process_all_images(model_number, input_json, train, result):
+    """
+    Processes all images writing the image features to the file location result
+
+    Parameters:
+        model_number (int): 1 for VGG19, 2 MobileNet, 3 stripped MobileNet
+        input_json (str): input json file to read the image locations from
+        train (boolean): True when training data
+        result (str): resulting npy file location
+
+    Returns:
+        MobileNetv2 with no top layers and a average pool added to produce
+        3x3x1280 features
+    """
     mode = "test"
     if train:
         mode = "train"
 
     if model_number == 1:
         model = get_normalised_vgg19_model()
-    else:
+    elif model_number == 2:
         model = get_mobilenet_v2()
+    else:
+        model = get_mobilenet_v2_3by3()
 
     dataset = {}
     with open(input_json) as data_file:
@@ -72,7 +116,9 @@ def preprocess_all_images(model_number, input_json, train, result):
         np.save(f, image_features)
 
 
-def preprocess_all_images_7by7(model_number, input_json, train, result):
+def process_all_images_7by7(model_number, input_json, train, result):
+    """No longer used. With this function I tested storing 7x7x1280 MobileNet
+    image features in separate archived files"""
     mode = "test"
     if train:
         mode = "train"
@@ -100,15 +146,15 @@ def preprocess_all_images_7by7(model_number, input_json, train, result):
         j += 1
         if j >= 30000:
             j = 0
-            np.savez(result+str(i//30000), *image_features)
+            np.savez(result + str(i // 30000), *image_features)
             image_features = []
     np.savez(result + str(i // 30000), *image_features)
 
 
 def main(model, input_json, train_result, test_result):
-    preprocess_all_images(model, input_json, True, train_result)
-    preprocess_all_images(model, input_json, False, test_result)
-
+    """Simple function to process both training and validation data"""
+    process_all_images(model, input_json, True, train_result)
+    process_all_images(model, input_json, False, test_result)
 
 
 if __name__ == "__main__":
@@ -117,9 +163,8 @@ if __name__ == "__main__":
     parser.add_argument('--input_json', help='input json file output from preprocess_questions.py')
     parser.add_argument('--train_result', help='where to place and what to call the output training npy file')
     parser.add_argument('--test_result', help='where to place and what to call the output testing npy file')
-    parser.add_argument('--model', help='1 is normalised VGG19, 2 is mobilenet, 3 is mobilnet 3x3', type=int)
+    parser.add_argument('--model', help='1 is normalised VGG19, 2 is mobilenet, 3 is MobileNetv2 3x3', type=int)
 
     args = parser.parse_args()
-    params = vars(args)  # convert to ordinary dict
-
+    params = vars(args)
     main(params['model'], params['input_json'], params['train_result'], params['test_result'])

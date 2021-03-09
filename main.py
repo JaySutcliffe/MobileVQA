@@ -3,6 +3,7 @@ import tensorflow as tf
 from data_generator import VQA_data_generator
 from cnn import get_normalised_vgg19_model
 
+
 class Lstm_cnn_trainer():
     # The size of a question and image
     max_question_length = 26
@@ -33,11 +34,6 @@ class Lstm_cnn_trainer():
         backward_layer2 = tf.keras.layers.LSTM(self.rnn_size, return_sequences=True,
                                                go_backwards=True)
 
-        """
-        tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(self.rnn_size,
-                                                           return_sequences=True)),
-        tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(self.rnn_size)),
-        """
         return tf.keras.models.Sequential([
             self.question_inputs,
             tf.keras.layers.Embedding(self.vocabulary_size,
@@ -48,7 +44,6 @@ class Lstm_cnn_trainer():
             tf.keras.layers.Bidirectional(forward_layer2, backward_layer=backward_layer2),
             tf.keras.layers.Dense(self.dense_hidden_size, activation='relu')
         ])
-
 
     def create_model(self):
         """

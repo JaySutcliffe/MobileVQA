@@ -4,8 +4,18 @@ import json
 
 
 def main(input_json, glove_location, output_npy):
-    # https://blog.keras.io/using-pre-trained-word-embeddings-in-a-keras-model.html
-    # 17/02/2021
+    """Takes in a in the input file, GloVe location and generates an
+    output npy file containing the embeddings.
+
+    Parameters:
+        input_json (str): input json file generated from preprocess_questions.npy
+        glove_location (str): the location of the GloVe word embeddings
+        output_npy (str): the location and file name to store the embedding matrix
+
+    Adapted from code taken from...
+    https://blog.keras.io/using-pre-trained-word-embeddings-in-a-keras-model.html
+    on 17/02/2021
+    """
     embeddings_index = {}
 
     f = open(glove_location, 'r', encoding="utf-8")
@@ -33,7 +43,6 @@ def main(input_json, glove_location, output_npy):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    # input json
     parser.add_argument('--input_json', default='data/data_prepro.json',
                         help='file containing index to word table')
     parser.add_argument('--glove_location', default='data/glove.840B.300d.txt',
