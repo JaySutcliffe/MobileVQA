@@ -46,10 +46,10 @@ class VQA_data_generator(tf.keras.utils.Sequence):
             self.__data['answers'] = np.array(temp) - 1
 
         # Removes questions with answers outside of the highest entered anwers
-        self.__data['questions'] = self.__data['questions'][self.__data['answers'] <= self.answer_count]
-        self.__data['length_q'] = self.__data['length_q'][self.__data['answers'] <= self.answer_count]
-        self.__data['img_list'] = self.__data['img_list'][self.__data['answers'] <= self.answer_count]
-        self.__data['answers'] = self.__data['answers'][self.__data['answers'] <= self.answer_count]
+        self.__data['questions'] = self.__data['questions'][self.__data['answers'] < self.answer_count]
+        self.__data['length_q'] = self.__data['length_q'][self.__data['answers'] < self.answer_count]
+        self.__data['img_list'] = self.__data['img_list'][self.__data['answers'] < self.answer_count]
+        self.__data['answers'] = self.__data['answers'][self.__data['answers'] < self.answer_count]
 
         # Aligns questions to the left or right
         self.__data['questions'] = align(self.__data['questions'],

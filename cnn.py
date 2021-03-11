@@ -203,7 +203,9 @@ class Feature_extracted_mobilenet_7by7():
 
 
 def main(model, input_json, train_result, test_result):
-    """Simple function to process both training and validation data"""
+    """
+    Simple function to process both training and validation data
+    """
     process_all_images(model, input_json, True, train_result)
     process_all_images(model, input_json, False, test_result)
 
