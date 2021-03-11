@@ -50,6 +50,11 @@ class VQA_data_generator(tf.keras.utils.Sequence):
         self.__data['length_q'] = self.__data['length_q'][self.__data['answers'] < self.answer_count]
         self.__data['img_list'] = self.__data['img_list'][self.__data['answers'] < self.answer_count]
         self.__data['answers'] = self.__data['answers'][self.__data['answers'] < self.answer_count]
+        self.__data['questions'] = self.__data['questions'][self.__data['answers'] >= 0]
+        self.__data['length_q'] = self.__data['length_q'][self.__data['answers'] >= 0]
+        self.__data['img_list'] = self.__data['img_list'][self.__data['answers'] >= 0]
+        self.__data['answers'] = self.__data['answers'][self.__data['answers'] >= 0]
+
 
         # Aligns questions to the left or right
         self.__data['questions'] = align(self.__data['questions'],
@@ -101,6 +106,6 @@ class VQA_data_generator(tf.keras.utils.Sequence):
 
 if __name__ == '__main__':
     vqa_gen = VQA_data_generator('data/data_prepro.json', 'data/data_prepro.h5', train=False,
-                                 train_cnn=False, feature_file='D:/Part2Project/val.npy')
+                                 feature_object='D:/Part2Project/val.npy')
     [image_features, questions], answers = vqa_gen.__getitem__(0)
     print(questions[0])
