@@ -151,6 +151,57 @@ def process_all_images_7by7(model_number, input_json, train, result):
     np.savez(result + str(i // 30000), *image_features)
 
 
+class Feature_extracted_mobilenet_1by1():
+    """
+    Class to extract 1x1x1280 image features from the MobileNetv2 model
+    """
+
+    def get(self, i):
+        feat = self.feature_file[i]
+        temp = np.sqrt(np.sum(np.multiply(feat, feat), axis=1))
+        img_feature = np.divide(feat, np.transpose(np.tile(temp, (1280, 1))))
+        feat = img_feature.reshape(1280, )
+        return feat
+
+    def __init__(self, feature_file):
+        self.feature_file = np.load(feature_file)
+
+
+class Feature_extracted_mobilenet_3by3():
+    """
+    Class to extract 1x1x1280 image features from the stripped MobileNetv2 model
+    """
+
+    def get(self, i):
+        feat = self.feature_file[i]
+        return feat.reshape((1, 3, 3, 1280))
+
+    def __init__(self, feature_file):
+        self.feature_file = np.load(feature_file)
+
+
+class Feature_extracted_mobilenet_7by7():
+    """
+    My attempts at 7x7x1280 feature extraction
+    """
+
+    def get(self, i):
+        if i < 30000:
+            return self.feature_file1["arr_" + str(i)]
+        elif i < 60000:
+            return self.feature_file2["arr_" + str(i - 30000)]
+        else:
+            return self.feature_file3["arr_" + str(i - 60000)]
+
+    def __init__(self, feature_file1, feature_file2, feature_file3=None):
+        self.ff = feature_file1
+        self.feature_file1 = np.load(feature_file1)
+        self.feature_file2 = np.load(feature_file2)
+        self.feature_file3 = None
+        if feature_file3 is not None:
+            self.feature_file3 = np.load(feature_file3)
+
+
 def main(model, input_json, train_result, test_result):
     """Simple function to process both training and validation data"""
     process_all_images(model, input_json, True, train_result)

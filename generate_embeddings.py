@@ -4,7 +4,8 @@ import json
 
 
 def main(input_json, glove_location, output_npy):
-    """Takes in a in the input file, GloVe location and generates an
+    """
+    Takes in a in the input file, GloVe location and generates an
     output npy file containing the embeddings.
 
     Parameters:
