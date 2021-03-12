@@ -63,7 +63,7 @@ class VQA_data_generator(tf.keras.utils.Sequence):
         self.input_json = input_json
         self.input_h5 = input_h5
         self.answer_count = answer_count
-        self.__train = True
+        self.__train = train
         if train:
             self.__mode = 'train'
         else:
