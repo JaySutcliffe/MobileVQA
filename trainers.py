@@ -1,6 +1,8 @@
 import tensorflow as tf
 import numpy as np
 import tensorflow_model_optimization as tfmot
+
+from cnn import Feature_extracted_mobilenet_1by1
 from data_generator import VQA_data_generator
 from soft_data_generator import VQA_soft_data_generator
 
@@ -306,3 +308,18 @@ class Soft_attention_trainer(Lstm_cnn_trainer):
             input_json, input_h5, train=False, feature_object=valid_feature_object,
             batch_size=self.batch_size)
         self.model = self.create_model()
+
+
+if __name__ == '__main__':
+    input_json = "data/data_prepro.json"
+    input_h5 = "data/data_prepro.h5"
+    input_glove_npy = "D:/Part2Project/word_embeddings.npy"
+    train_feature_file = "D:/Part2Project/train30002.npy"
+    valid_feature_file = "D:/Part2Project/val30002.npy"
+    output = "D:/Part2Project/saved_model/lstm_cnn_model"
+
+    tf.keras.backend.clear_session()
+    vqa = Lstm_cnn_trainer(input_json, input_h5, input_glove_npy,
+                           train_feature_object=Feature_extracted_mobilenet_1by1(train_feature_file),
+                           valid_feature_object=Feature_extracted_mobilenet_1by1(valid_feature_file))
+    history = vqa.train_model(output)

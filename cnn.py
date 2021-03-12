@@ -158,9 +158,9 @@ class Feature_extracted_mobilenet_1by1():
 
     def get(self, i):
         feat = self.feature_file[i]
-        temp = np.sqrt(np.sum(np.multiply(feat, feat), axis=1))
-        img_feature = np.divide(feat, np.transpose(np.tile(temp, (1280, 1))))
-        feat = img_feature.reshape(1280, )
+        #temp = np.sqrt(np.sum(np.multiply(feat, feat), axis=1))
+        #img_feature = np.divide(feat, np.transpose(np.tile(temp, (1280, 1))))
+        feat = feat.reshape(1280,)
         return feat
 
     def __init__(self, feature_file):

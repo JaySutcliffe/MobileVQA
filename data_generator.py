@@ -50,10 +50,6 @@ class VQA_data_generator(tf.keras.utils.Sequence):
         self.__data['length_q'] = self.__data['length_q'][self.__data['answers'] < self.answer_count]
         self.__data['img_list'] = self.__data['img_list'][self.__data['answers'] < self.answer_count]
         self.__data['answers'] = self.__data['answers'][self.__data['answers'] < self.answer_count]
-        self.__data['questions'] = self.__data['questions'][self.__data['answers'] >= 0]
-        self.__data['length_q'] = self.__data['length_q'][self.__data['answers'] >= 0]
-        self.__data['img_list'] = self.__data['img_list'][self.__data['answers'] >= 0]
-        self.__data['answers'] = self.__data['answers'][self.__data['answers'] >= 0]
 
 
         # Aligns questions to the left or right
