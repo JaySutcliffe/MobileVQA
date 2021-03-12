@@ -107,7 +107,7 @@ class Lstm_cnn_trainer():
             input_json, input_h5, feature_object=train_feature_object,
             batch_size=self.batch_size)
         self.val_generator = VQA_data_generator(
-            input_json, input_h5, feature_object=valid_feature_object,
+            input_json, input_h5, train=False, feature_object=valid_feature_object,
             batch_size=self.batch_size)
         self.set_embedding_matrix(input_glove_npy)
         self.model = self.create_model()

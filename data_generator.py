@@ -102,6 +102,6 @@ class VQA_data_generator(tf.keras.utils.Sequence):
 
 if __name__ == '__main__':
     vqa_gen = VQA_data_generator('data/data_prepro.json', 'data/data_prepro.h5', train=False,
-                                 feature_object='D:/Part2Project/val.npy')
+                                 feature_object='D:/Part2Project/val30002.npy')
     [image_features, questions], answers = vqa_gen.__getitem__(0)
     print(questions[0])
