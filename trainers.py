@@ -319,7 +319,7 @@ if __name__ == '__main__':
     output = "D:/Part2Project/saved_model/lstm_cnn_model"
 
     tf.keras.backend.clear_session()
-    vqa = Lstm_cnn_trainer(input_json, input_h5, input_glove_npy,
+    vqa = Soft_lstm_cnn_trainer(input_json, input_h5, input_glove_npy,
                            train_feature_object=Feature_extracted_mobilenet_1by1(train_feature_file),
                            valid_feature_object=Feature_extracted_mobilenet_1by1(valid_feature_file))
     history = vqa.train_model(output)

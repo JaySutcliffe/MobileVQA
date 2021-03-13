@@ -1,7 +1,8 @@
 import numpy as np
 import h5py
 import json
-from data_generator import align, VQA_data_generator
+import tensorflow as tf
+from data_generator import align
 
 
 def soft_score(occurrences):
@@ -61,9 +62,12 @@ def sparse_to_full(sparse_vector):
     return vector
 
 
-class VQA_soft_data_generator(VQA_data_generator):
+class VQA_soft_data_generator(tf.keras.utils.Sequence):
 
     def __get_data(self):
+        """
+        Loads the questions, images and answers from the input dataset
+        """
         self.__dataset = {}
         self.__data = {}
         with open(self.input_json) as data_file:
@@ -87,11 +91,22 @@ class VQA_soft_data_generator(VQA_data_generator):
                                       for string, ans in zip(temp_ans_more, temp_ans)]
 
         self.__data['questions'] = align(self.__data['questions'],
-                                         self.__data['length_q'], max_length=14)
+                                         self.__data['length_q'])
+        print(self.__data['questions'].shape)
 
     def __init__(self, input_json, input_h5, train=True,
                  batch_size=500, shuffle=True, feature_object=None):
-        super().__init__(self, input_json, input_h5, train, batch_size, shuffle, feature_object)
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.input_json = input_json
+        self.input_h5 = input_h5
+        if train:
+            self.__mode = 'train'
+        else:
+            self.__mode = 'test'
+        self.__get_data()
+        self.on_epoch_end()
+        self.__unique_features = feature_object
 
     def __len__(self):
         return int(np.floor(len(self.__data['questions']) / self.batch_size))
@@ -108,3 +123,13 @@ class VQA_soft_data_generator(VQA_data_generator):
             [self.__unique_features.get(i) for i in image_list])
 
         return [image_features, questions], answers
+
+    def on_epoch_end(self):
+        if self.shuffle:
+            perm = np.random.permutation(len(self.__data['questions']))
+            self.__data['questions'] = \
+                [self.__data['questions'][i] for i in perm]
+            self.__data['answers'] = \
+                [self.__data['answers'][i] for i in perm]
+            self.__data['img_list'] = \
+                [self.__data['img_list'][i] for i in perm]
