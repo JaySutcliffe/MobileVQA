@@ -1,61 +1,76 @@
 import argparse
+import matplotlib.pyplot as plt
 import json
-import h5py
-#import tensorflow as tf
-#import tflite_runtime.interpreter as tflite
-import numpy as np
-from data_generator import align
+
+from evaluation.PythonEvaluationTools.vqaEvaluation.vqaEval import VQAEval
+from evaluation.PythonHelperTools.vqaTools.vqa import VQA
 
 
-def evaluate_model(model_path, input_json, input_h5, feature_object, max_length):
-    dataset = {}
-    data = {}
-    with open(input_json) as data_file:
-        d = json.load(data_file)
-    for key in d.keys():
-        dataset[key] = d[key]
+version_type = 'v2_'
+task_type = 'OpenEnded'
+data_type = 'mscoco'
+data_sub_type = 'val2014'
+file_types = ['results', 'accuracy', 'evalQA', 'evalQuesType', 'evalAnsType']
 
-    with h5py.File(input_h5, 'r') as hf:
-        temp = hf.get('ques_test')
-        data['questions'] = np.array(temp)
 
-        temp = hf.get('ques_length_test')
-        data['length_q'] = np.array(temp)
+def evaluate_results(annotation_json, question_json, results_json, result_type):
+    [res_file, accuracy_file, eval_qa_file, eval_ques_type_file, eval_ans_type_file] = [
+        'results/%s%s_%s_%s_%s_%s.json' % (version_type, task_type, data_type,
+                                           data_sub_type, result_type, file_type)
+        for file_type in file_types]
 
-        # Subtract 1 based on indexing
-        temp = hf.get('img_pos_test')
-        data['img_list'] = np.array(temp) - 1
+    # evaluate results
+    vqa = VQA(annotation_json, question_json)
+    vqa_res = vqa.loadRes(results_json, question_json)
+    vqa_eval = VQAEval(vqa, vqa_res)
+    vqa_eval.evaluate()
 
-        temp = hf.get('ans_test')
-        data['answers'] = np.array(temp) - 1
+    # print accuracies
+    print()
+    print("Overall Accuracy is: %.02f\n" % (vqa_eval.accuracy['overall']))
+    print("Per Question Type Accuracy is the following:")
+    for quesType in vqa_eval.accuracy['perQuestionType']:
+        print("%s : %.02f" % (quesType, vqa_eval.accuracy['perQuestionType'][quesType]))
+    print("\n")
+    print("Per Answer Type Accuracy is the following:")
+    for ansType in vqa_eval.accuracy['perAnswerType']:
+        print("%s : %.02f" % (ansType, vqa_eval.accuracy['perAnswerType'][ansType]))
+    print("\n")
 
-    # Aligns questions to the left or right
-    data['questions'] = align(data['questions'], data['length_q'], max_length=max_length)
+    # plot accuracy for various question types
+    plt.bar(range(len(vqa_eval.accuracy['perQuestionType'])), vqa_eval.accuracy['perQuestionType'].values(),
+            align='center')
+    plt.xticks(range(len(vqa_eval.accuracy['perQuestionType'])), vqa_eval.accuracy['perQuestionType'].keys(),
+               rotation='0',
+               fontsize=10)
+    plt.title('Per Question Type Accuracy', fontsize=10)
+    plt.xlabel('Question Types', fontsize=10)
+    plt.ylabel('Accuracy', fontsize=10)
+    plt.show()
 
-    questions = np.array(data['questions'])
-    image_features = np.array([feature_object.get(i) for i in data['img_list']])
+    # save evaluation results to ./Results folder
+    json.dump(vqa_eval.accuracy, open(accuracy_file, 'w'))
+    json.dump(vqa_eval.evalQA, open(eval_qa_file, 'w'))
+    json.dump(vqa_eval.evalQuesType, open(eval_ques_type_file, 'w'))
+    json.dump(vqa_eval.evalAnsType, open(eval_ans_type_file, 'w'))
 
-    # interpreter = tf.lite.Interpreter(model_path=model_path)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--input_json', default='data/data_prepro.json',
+    parser.add_argument('--annotation_json', default='data/v2_mscoco_val2014_annotations.json',
                         help='the path to the json file')
-    parser.add_argument('--input_h5', default='data/data_prepro.h5',
+    parser.add_argument('--question_json', default='data/v2_OpenEnded_mscoco_val2014_questions.json',
                         help='the path to the h5 file')
-    parser.add_argument('--model_path', default='data/vqa.tflite',
+    parser.add_argument('--result_json', default='data/test_results.json',
                         help='the path to the tne Tensorflow Lite mod')
-    parser.add_argument('--feature_object', type="int", default='2',
-                        help='1 for VGG19, 2 MobileNetv2, 3 MobileNetv2 3x3')
-    parser.add_argument('--max_length', type="int", default='14',
-                        help='26 normally, 14 for attention models')
+    parser.add_argument('--result_type', default='lstm_cnn',
+                        help='the name of the model used')
 
     args = parser.parse_args()
     params = vars(args)
-    main(params['model_path'],
-         params['input_json'],
-         params['input_h5'],
-         params['feature_object'],
-         params['max_length'])
 
+    evaluate_results(params['annotation_json'],
+                     params['question_json'],
+                     params['result_json'],
+                     params['result_type'])

@@ -151,7 +151,7 @@ def process_all_images_7by7(model_number, input_json, train, result):
     np.savez(result + str(i // 30000), *image_features)
 
 
-class Feature_extracted_mobilenet_1by1():
+class Feature_extracted_mobilenet_1by1:
     """
     Class to extract 1x1x1280 image features from the MobileNetv2 model
     """
@@ -167,7 +167,7 @@ class Feature_extracted_mobilenet_1by1():
         self.feature_file = np.load(feature_file)
 
 
-class Feature_extracted_mobilenet_3by3():
+class Feature_extracted_mobilenet_3by3:
     """
     Class to extract 1x1x1280 image features from the stripped MobileNetv2 model
     """
@@ -180,7 +180,7 @@ class Feature_extracted_mobilenet_3by3():
         self.feature_file = np.load(feature_file)
 
 
-class Feature_extracted_mobilenet_7by7():
+class Feature_extracted_mobilenet_7by7:
     """
     My attempts at 7x7x1280 feature extraction
     """

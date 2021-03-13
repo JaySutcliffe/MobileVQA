@@ -19,7 +19,7 @@ class Lstm_cnn_trainer():
 
     # Model configuration variables
     max_epochs = 30
-    patience = 3
+    patience = 5
     batch_size = 500
     embedding_size = 300
     rnn_size = 512
@@ -188,7 +188,7 @@ class Soft_lstm_cnn_trainer(Lstm_cnn_trainer):
                               name=__class__.__name__ + "_model")
 
     def train_model(self, save_path):
-        self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0005),
+        self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0003),
                            loss="binary_crossentropy",
                            metrics=['accuracy'])
 
