@@ -56,7 +56,6 @@ def sparse_to_full(sparse_vector):
     """
     vector = np.zeros(3000)
     for answer, score in sparse_vector.items():
-        answer = answer - 1
         if answer < 3000:
             vector[answer] = score
     return vector
