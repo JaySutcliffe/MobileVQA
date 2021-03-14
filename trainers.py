@@ -180,7 +180,7 @@ class Soft_lstm_cnn_trainer(Lstm_cnn_trainer):
         question_model = self.create_question_processing_model()
         question_dense = tf.keras.layers.Dense(self.dense_hidden_size, activation='tanh')(question_model.output)
         linked = tf.keras.layers.multiply([image_model_output, question_dense])
-        next = tf.keras.layers.Dense(self.output_size, activation="tanh")(linked)
+        next = tf.keras.layers.Dense(self.dense_hidden_size, activation="tanh")(linked)
         # Difference from before is the sigmoid output
         outputs = tf.keras.layers.Dense(self.output_size, activation="sigmoid")(next)
 

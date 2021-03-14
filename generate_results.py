@@ -75,7 +75,7 @@ if __name__ == "__main__":
                         help='1 for VGG19, 2 MobileNetv2, 3 MobileNetv2 3x3')
     parser.add_argument('--max_length', type=int, default=26,
                         help='26 normally, 14 for attention models')
-    parser.add_argument('--output_json', default='data/test_results.json',
+    parser.add_argument('--output_json', default='data/soft_test_results.json',
                         help='output json file to store the results')
 
     args = parser.parse_args()

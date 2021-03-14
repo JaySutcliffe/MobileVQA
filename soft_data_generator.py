@@ -90,9 +90,10 @@ class VQA_soft_data_generator(tf.keras.utils.Sequence):
             self.__data['answers'] = [get_to_sparse_answer_vector(string, ans)
                                       for string, ans in zip(temp_ans_more, temp_ans)]
 
-        self.__data['questions'] = align(self.__data['questions'],
-                                         self.__data['length_q'])
-        print(self.__data['questions'].shape)
+            temp = hf.get('question_id_' + self.__mode)
+            self.__data['question_id_test'] = np.array(temp)
+            self.__data['questions'] = align(self.__data['questions'],
+                                             self.__data['length_q'])
 
     def __init__(self, input_json, input_h5, train=True,
                  batch_size=500, shuffle=True, feature_object=None):
