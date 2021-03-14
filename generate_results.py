@@ -54,8 +54,8 @@ def store_results(model_path, input_json, input_h5,
         interpreter.invoke()
         answer_index = int(np.argmax(output()))
         answer = dataset['ix_to_ans'][str(answer_index + 1)]
+        print(answer_index, data['answers'][i])
         answers_with_ids.append({'answer': answer, 'question_id': int(data['question_id_test'][i])})
-        print(i)
 
     json.dump(answers_with_ids, open(result, 'w'))
 
