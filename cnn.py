@@ -174,7 +174,7 @@ class Feature_extracted_mobilenet_3by3:
 
     def get(self, i):
         feat = self.feature_file[i]
-        return feat.reshape((1, 3, 3, 1280))
+        return feat.reshape((3, 3, 1280))
 
     def __init__(self, feature_file):
         self.feature_file = np.load(feature_file)

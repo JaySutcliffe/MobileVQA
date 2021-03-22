@@ -54,8 +54,10 @@ def store_results(model_path, input_json, input_h5,
         interpreter.invoke()
         answer_index = int(np.argmax(output()))
         answer = dataset['ix_to_ans'][str(answer_index + 1)]
-        print(answer_index, data['answers'][i])
         answers_with_ids.append({'answer': answer, 'question_id': int(data['question_id_test'][i])})
+        #print(i)
+        print(answer_index, data['answers'][i])
+        print(answer)
 
     json.dump(answers_with_ids, open(result, 'w'))
 
@@ -75,7 +77,7 @@ if __name__ == "__main__":
                         help='1 for VGG19, 2 MobileNetv2, 3 MobileNetv2 3x3')
     parser.add_argument('--max_length', type=int, default=26,
                         help='26 normally, 14 for attention models')
-    parser.add_argument('--output_json', default='data/soft_test_results.json',
+    parser.add_argument('--output_json', default='data/full_test_result.json',
                         help='output json file to store the results')
 
     args = parser.parse_args()
@@ -85,6 +87,7 @@ if __name__ == "__main__":
         feature_object = Feature_extracted_mobilenet_1by1(params['feature_file'])
     elif params['feature_object'] == 3:
         feature_object = Feature_extracted_mobilenet_3by3(params['feature_file'])
+        print(feature_object.get(0).shape)
 
     store_results(params['model_path'],
                   params['input_json'],

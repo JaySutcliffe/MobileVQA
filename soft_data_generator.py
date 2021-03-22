@@ -92,10 +92,11 @@ class VQA_soft_data_generator(tf.keras.utils.Sequence):
             temp = hf.get('question_id_' + self.__mode)
             self.__data['question_id_test'] = np.array(temp)
             self.__data['questions'] = align(self.__data['questions'],
-                                             self.__data['length_q'])
+                                             self.__data['length_q'],
+                                             self.max_length)
 
     def __init__(self, input_json, input_h5, train=True,
-                 batch_size=500, shuffle=True, feature_object=None):
+                 batch_size=500, shuffle=True, feature_object=None, max_length=26):
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.input_json = input_json
@@ -104,6 +105,7 @@ class VQA_soft_data_generator(tf.keras.utils.Sequence):
             self.__mode = 'train'
         else:
             self.__mode = 'test'
+        self.max_length = max_length
         self.__get_data()
         self.on_epoch_end()
         self.__unique_features = feature_object

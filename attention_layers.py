@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+
 # Adapted from https://www.tensorflow.org/tutorials/text/transformer
 def scaled_dot_product_attention(q, k, v, mask):
     """Calculate the attention weights.
@@ -233,6 +234,7 @@ class MultiModalAttention(tf.keras.layers.Layer):
         self.norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
         self.final = tf.keras.layers.Dense(output_size, activation="sigmoid")
         self.reshape = tf.keras.layers.Reshape((output_size,))
+
 
     def call(self, y, x):
         y_dash = self.question_dot1([self.question_mlp(y), y])

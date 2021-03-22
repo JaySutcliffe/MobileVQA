@@ -2,7 +2,8 @@ import tensorflow as tf
 import numpy as np
 import tensorflow_model_optimization as tfmot
 
-from cnn import Feature_extracted_mobilenet_1by1
+from attention_layers import ModularCoAttention, MultiModalAttention
+from cnn import Feature_extracted_mobilenet_1by1, Feature_extracted_mobilenet_3by3
 from data_generator import VQA_data_generator
 from soft_data_generator import VQA_soft_data_generator
 
@@ -227,7 +228,8 @@ class Attention_trainer(Lstm_cnn_trainer):
         """
         image_features = tf.keras.layers.Reshape((9, 1280))(self.image_inputs)
         question_model = self.create_question_processing_model()
-        question_dense_features = tf.keras.layers.Dense(self.dense_hidden_size, activation='tanh')(question_model.output)
+        question_dense_features = tf.keras.layers.Dense(self.dense_hidden_size, activation='tanh')(
+            question_model.output)
 
         question_stack = tf.keras.layers.RepeatVector(9)(question_model.output)
         non_linear_input = tf.keras.layers.concatenate([image_features, question_stack], axis=-1)
@@ -239,7 +241,8 @@ class Attention_trainer(Lstm_cnn_trainer):
         attention_output = tf.keras.layers.Dense(9, activation="softmax", use_bias=False)(attention_output)
         attention_image_features = tf.keras.layers.Dot(axes=(1, 1))([attention_output, image_features])
 
-        attention_final_dense = tf.keras.layers.Dense(self.dense_hidden_size, activation="tanh")(attention_image_features)
+        attention_final_dense = tf.keras.layers.Dense(self.dense_hidden_size, activation="tanh")(
+            attention_image_features)
         linked = tf.keras.layers.multiply([attention_final_dense, question_dense_features])
         next = tf.keras.layers.Dense(self.output_size, activation="tanh")(linked)
         outputs = tf.keras.layers.Dense(self.output_size, activation="softmax")(next)
@@ -310,16 +313,78 @@ class Soft_attention_trainer(Lstm_cnn_trainer):
         self.model = self.create_model()
 
 
+class Full_attention_trainer(Lstm_cnn_trainer):
+    image_inputs = tf.keras.Input(shape=(3, 3, 1280))
+    output_size = 3000
+    max_question_length = 14
+    question_inputs = tf.keras.Input(shape=(max_question_length,))
+    batch_size = 64
+
+    def create_question_processing_model(self):
+        return tf.keras.models.Sequential([
+            tf.keras.layers.Embedding(self.embedding_matrix.shape[0],
+                                      self.embedding_size,
+                                      weights=[self.embedding_matrix],
+                                      input_length=self.max_question_length),
+            tf.keras.layers.LSTM(512, return_sequences=True)
+        ])
+
+    def create_model(self):
+        """
+        Creates a VQA model combining an image and question model
+        :return: Attention VQA model
+        """
+        image_features = tf.keras.layers.Reshape((9, 1280))(self.image_inputs)
+        x = tf.keras.layers.Dense(512, activation='tanh')(image_features)
+        x = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x)
+        y = self.create_question_processing_model()(self.question_inputs)
+        y, x = ModularCoAttention(6, 512, 8, 2048)(y, x)
+        outputs = MultiModalAttention(512, self.output_size)(y, x)
+
+        return tf.keras.Model(inputs=[self.image_inputs, self.question_inputs], outputs=outputs,
+                              name=__class__.__name__ + "_model")
+
+    def train_model(self, save_path):
+        """
+        Trains the model and then outputs it to the file entered
+        """
+
+        self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
+                           loss="binary_crossentropy",
+                           metrics=['accuracy'])
+
+        callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=self.patience)
+        history = self.model.fit(x=self.train_generator,
+                                 validation_data=self.val_generator,
+                                 epochs=self.max_epochs,
+                                 callbacks=[callback])
+
+        self.model.save(save_path)
+        return history
+
+    def __init__(self, input_json, input_h5, input_glove_npy,
+                 train_feature_object,
+                 valid_feature_object):
+        self.train_generator = VQA_soft_data_generator(
+            input_json, input_h5, feature_object=train_feature_object,
+            batch_size=self.batch_size, max_length=self.max_question_length)
+        self.val_generator = VQA_soft_data_generator(
+            input_json, input_h5, train=False, feature_object=valid_feature_object,
+            batch_size=self.batch_size, max_length=self.max_question_length)
+        self.set_embedding_matrix(input_glove_npy)
+        self.model = self.create_model()
+
+
 if __name__ == '__main__':
     input_json = "data/data_prepro.json"
     input_h5 = "data/data_prepro.h5"
     input_glove_npy = "D:/Part2Project/word_embeddings.npy"
-    train_feature_file = "D:/Part2Project/train30002.npy"
-    valid_feature_file = "D:/Part2Project/val30002.npy"
+    train_feature_file = "D:/Part2Project/train_new.npy"
+    valid_feature_file = "D:/Part2Project/val_new.npy"
     output = "D:/Part2Project/saved_model/lstm_cnn_model"
 
     tf.keras.backend.clear_session()
-    vqa = Soft_lstm_cnn_trainer(input_json, input_h5, input_glove_npy,
-                           train_feature_object=Feature_extracted_mobilenet_1by1(train_feature_file),
-                           valid_feature_object=Feature_extracted_mobilenet_1by1(valid_feature_file))
+    vqa = Full_attention_trainer(input_json, input_h5, input_glove_npy,
+                                 train_feature_object=Feature_extracted_mobilenet_3by3(train_feature_file),
+                                 valid_feature_object=Feature_extracted_mobilenet_3by3(valid_feature_file))
     history = vqa.train_model(output)
