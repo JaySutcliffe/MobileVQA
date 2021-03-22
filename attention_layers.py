@@ -237,8 +237,8 @@ class MultiModalAttention(tf.keras.layers.Layer):
 
 
     def call(self, y, x):
-        y_dash = self.question_dot1([self.question_mlp(y), y])
-        x_dash = self.image_dot1([self.image_mlp(x), x])
+        y_dash = self.question_dot1([tf.keras.activations.softmax(self.question_mlp(y)), y])
+        x_dash = self.image_dot1([tf.keras.activations.softmax(self.image_mlp(x)), x])
 
         middle = self.concat([y_dash, x_dash])
         middle = self.fc1(middle)
