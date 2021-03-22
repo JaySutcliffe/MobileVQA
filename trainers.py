@@ -344,7 +344,7 @@ class Full_attention_trainer(Lstm_cnn_trainer):
         return tf.keras.Model(inputs=[self.image_inputs, self.question_inputs], outputs=outputs,
                               name=__class__.__name__ + "_model")
 
-    def train_model(self, save_path):
+    def train_model(self, save_path, checkpoint_path):
         """
         Trains the model and then outputs it to the file entered
         """
@@ -353,11 +353,18 @@ class Full_attention_trainer(Lstm_cnn_trainer):
                            loss="binary_crossentropy",
                            metrics=['accuracy'])
 
+        model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+            filepath=checkpoint_path,
+            save_weights_only=True,
+            monitor='val_loss',
+            mode='max',
+            save_best_only=True)
+
         callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=self.patience)
         history = self.model.fit(x=self.train_generator,
                                  validation_data=self.val_generator,
                                  epochs=self.max_epochs,
-                                 callbacks=[callback])
+                                 callbacks=[callback, model_checkpoint_callback])
 
         self.model.save(save_path)
         return history
