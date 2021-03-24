@@ -3,9 +3,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
-    input_json = "data/evaluation.json"
+    input_json = "data/evaluation_output.json"
     with open(input_json) as data_file:
         data = json.load(data_file)
+
+    plt.plot(np.arange(len(data['cnn_inference_time'])), np.array(data["cnn_inference_time"]))
+    plt.show()
+
+    plt.plot(np.arange(len(data['nlp_inference_time'])), np.array(data["nlp_inference_time"]))
+    plt.show()
 
     data["cpu_usage"] = data["cpu_usage"][1:]
 
