@@ -326,7 +326,7 @@ class Full_attention_trainer(Lstm_cnn_trainer):
                                       self.embedding_size,
                                       weights=[self.embedding_matrix],
                                       input_length=self.max_question_length),
-            tf.keras.layers.LSTM(512, return_sequences=True)
+            tf.keras.layers.LSTM(1280, return_sequences=True)
         ])
 
     def create_model(self):
@@ -334,12 +334,12 @@ class Full_attention_trainer(Lstm_cnn_trainer):
         Creates a VQA model combining an image and question model
         :return: Attention VQA model
         """
-        image_features = tf.keras.layers.Reshape((9, 1280))(self.image_inputs)
-        x = tf.keras.layers.Dense(512, activation='tanh')(image_features)
-        x = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x)
+        x = tf.keras.layers.Reshape((9, 1280))(self.image_inputs)
+        #x = tf.keras.layers.Dense(512, activation='tanh')(x)
+        #x = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x)
         y = self.create_question_processing_model()(self.question_inputs)
-        y, x = ModularCoAttention(6, 512, 8, 2048)(y, x)
-        outputs = MultiModalAttention(512, self.output_size)(y, x)
+        y, x = ModularCoAttention(6, 1280, 8, 4*1280)(y, x)
+        outputs = MultiModalAttention(1280, self.output_size)(y, x)
 
         return tf.keras.Model(inputs=[self.image_inputs, self.question_inputs], outputs=outputs,
                               name=__class__.__name__ + "_model")
