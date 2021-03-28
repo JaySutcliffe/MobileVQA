@@ -26,9 +26,9 @@ def preprocess_image(model_number, image_path):
         return tf.keras.applications.mobilenet_v2.preprocess_input(image_array)
 
 
-def get_normalised_vgg19_model():
+def get_vgg19_model():
     """
-    Creates the image processing part of the VQA model
+    Creates the VGG19 model peeling of the top layer for transfer learning
 
     Returns:
          A Keras model with VGG19 CNN to extract image features
@@ -36,9 +36,7 @@ def get_normalised_vgg19_model():
     model = tf.keras.applications.VGG19(
         include_top=True,
         weights='imagenet')
-
-    outputs = tf.keras.layers.LayerNormalization()(model.layers[-2].output)
-    return tf.keras.Model(model.input, outputs=outputs)
+    return tf.keras.Model(model.input, outputs=model.layers[-2].output)
 
 
 def get_mobilenet_v2():
@@ -92,7 +90,7 @@ def process_all_images(model_number, input_json, train, result):
         mode = "train"
 
     if model_number == 1:
-        model = get_normalised_vgg19_model()
+        model = get_vgg19_model()
     elif model_number == 2:
         model = get_mobilenet_v2()
     else:
@@ -124,7 +122,7 @@ def process_all_images_7by7(model_number, input_json, train, result):
         mode = "train"
 
     if model_number == 1:
-        model = get_normalised_vgg19_model()
+        model = get_vgg19_model()
     elif model_number == 2:
         model = get_mobilenet_v2()
     else:

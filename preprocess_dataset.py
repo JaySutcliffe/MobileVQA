@@ -30,9 +30,7 @@ def main(params):
     test = []
     imdir = params['dest'] + '/{0}/COCO_{0}_{1:012d}.jpg'
 
-    v2 = True
-
-    if v2:
+    if params['v'] == 2:
         train_annotations_file = params['dir'] + '/v2_mscoco_train2014_annotations.json'
         val_annotations_file = params['dir'] + '/v2_mscoco_val2014_annotations.json'
         train_questions_file = params['dir'] + '/v2_OpenEnded_mscoco_train2014_questions.json'
@@ -145,6 +143,8 @@ if __name__ == "__main__":
     parser.add_argument('--dest', default=".", type=str,
                         help='The parent directory storing all VQA related files and directories'
                              'when training')
+    parser.add_argument('--version', default=2, type=int,
+                        help='1: use VQAv1 dataset, 2: use VQAv2 dataset')
 
     args = parser.parse_args()
     params = vars(args)

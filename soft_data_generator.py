@@ -2,7 +2,7 @@ import numpy as np
 import h5py
 import json
 import tensorflow as tf
-from data_generator import align
+from data_generator import align, VQA_data_generator
 
 
 def soft_score(occurrences):
@@ -61,39 +61,39 @@ def sparse_to_full(sparse_vector):
     return vector
 
 
-class VQA_soft_data_generator(tf.keras.utils.Sequence):
+class VQA_soft_data_generator(VQA_data_generator):
 
-    def __get_data(self):
+    def get_data(self):
         """
         Loads the questions, images and answers from the input dataset
         """
-        self.__dataset = {}
-        self.__data = {}
+        self.dataset = {}
+        self.data = {}
         with open(self.input_json) as data_file:
-            data = json.load(data_file)
-        for key in data.keys():
-            self.__dataset[key] = data[key]
+            d = json.load(data_file)
+        for key in d.keys():
+            self.dataset[key] = d[key]
 
         with h5py.File(self.input_h5, 'r') as hf:
             temp = hf.get('ques_' + self.__mode)
-            self.__data['questions'] = np.array(temp)
+            self.data['questions'] = np.array(temp)
 
             temp = hf.get('ques_length_' + self.__mode)
-            self.__data['length_q'] = np.array(temp)
+            self.data['length_q'] = np.array(temp)
 
             temp = hf.get('img_pos_' + self.__mode)
-            self.__data['img_list'] = np.array(temp) - 1
+            self.data['img_list'] = np.array(temp) - 1
 
             temp_ans_more = hf.get('ans_more_' + self.__mode)
             temp_ans = hf.get('ans_' + self.__mode)
-            self.__data['answers'] = [get_to_sparse_answer_vector(string, ans)
-                                      for string, ans in zip(temp_ans_more, temp_ans)]
+            self.data['answers'] = [get_to_sparse_answer_vector(string, ans)
+                                    for string, ans in zip(temp_ans_more, temp_ans)]
 
             temp = hf.get('question_id_' + self.__mode)
-            self.__data['question_id_test'] = np.array(temp)
-            self.__data['questions'] = align(self.__data['questions'],
-                                             self.__data['length_q'],
-                                             self.max_length)
+            self.data['question_id_test'] = np.array(temp)
+            self.data['questions'] = align(self.data['questions'],
+                                           self.data['length_q'],
+                                           self.max_length)
 
     def __init__(self, input_json, input_h5, train=True,
                  batch_size=500, shuffle=True, feature_object=None, max_length=26):
@@ -106,32 +106,19 @@ class VQA_soft_data_generator(tf.keras.utils.Sequence):
         else:
             self.__mode = 'test'
         self.max_length = max_length
-        self.__get_data()
+        self.get_data()
         self.on_epoch_end()
         self.__unique_features = feature_object
 
-    def __len__(self):
-        return int(np.floor(len(self.__data['questions']) / self.batch_size))
-
     def __getitem__(self, idx):
-        questions = np.array(self.__data['questions'][
+        questions = np.array(self.data['questions'][
                              idx * self.batch_size:(idx + 1) * self.batch_size])
-        image_list = self.__data['img_list'][
+        image_list = self.data['img_list'][
                      idx * self.batch_size:(idx + 1) * self.batch_size]
-        answers_sparse = self.__data['answers'][
+        answers_sparse = self.data['answers'][
                          idx * self.batch_size:(idx + 1) * self.batch_size]
         answers = np.array([sparse_to_full(answer) for answer in answers_sparse])
         image_features = np.array(
             [self.__unique_features.get(i) for i in image_list])
 
         return [image_features, questions], answers
-
-    def on_epoch_end(self):
-        if self.shuffle:
-            perm = np.random.permutation(len(self.__data['questions']))
-            self.__data['questions'] = \
-                [self.__data['questions'][i] for i in perm]
-            self.__data['answers'] = \
-                [self.__data['answers'][i] for i in perm]
-            self.__data['img_list'] = \
-                [self.__data['img_list'][i] for i in perm]

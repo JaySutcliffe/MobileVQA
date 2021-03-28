@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import tensorflow_model_optimization as tfmot
+import tempfile
 
 from attention_layers import ModularCoAttention, MultiModalAttention
 from cnn import Feature_extracted_mobilenet_1by1, Feature_extracted_mobilenet_3by3
@@ -26,6 +27,7 @@ class Lstm_cnn_trainer():
     rnn_size = 512
     dense_hidden_size = 1024
     output_size = 1000
+    learning_rate = 0.0003
 
     image_inputs = tf.keras.Input(shape=(image_feature_size,))
     question_inputs = tf.keras.Input(shape=(max_question_length,))
@@ -70,17 +72,17 @@ class Lstm_cnn_trainer():
         Returns:
             Keras LSTM+CNN VQA model
         """
-        image_model = self.image_inputs
-
-        image_model_output = \
-            tf.keras.layers.Dense(self.dense_hidden_size, activation='tanh')(image_model)
+        image_model_output = tf.keras.layers.Dense(
+            self.dense_hidden_size, activation='tanh')(self.image_inputs)
         question_model = self.create_question_processing_model()
-        question_dense = tf.keras.layers.Dense(self.dense_hidden_size, activation='tanh')(question_model.output)
+        question_dense = tf.keras.layers.Dense(
+            self.dense_hidden_size, activation='tanh')(question_model.output)
         linked = tf.keras.layers.multiply([image_model_output, question_dense])
         next = tf.keras.layers.Dense(self.output_size, activation="tanh")(linked)
         outputs = tf.keras.layers.Dense(self.output_size, activation="softmax")(next)
 
-        return tf.keras.Model(inputs=[self.image_inputs, self.question_inputs], outputs=outputs,
+        return tf.keras.Model(inputs=[self.image_inputs, self.question_inputs],
+                              outputs=outputs,
                               name=__class__.__name__ + "_model")
 
     def train_model(self, save_path):
@@ -88,7 +90,7 @@ class Lstm_cnn_trainer():
         Trains the model and then outputs it to the file entered
         """
 
-        self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0003),
+        self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=self.learning_rate),
                            loss=tf.keras.losses.SparseCategoricalCrossentropy(),
                            metrics=['accuracy'])
 
@@ -114,7 +116,53 @@ class Lstm_cnn_trainer():
         self.model = self.create_model()
 
 
-class Lstm_cnn_pruned_trainer(Lstm_cnn_trainer):
+class Pruned_lstm_cnn_trainer(Lstm_cnn_trainer):
+    initial_sparsity = 0.2
+    final_sparsity = 0.8
+
+    def create_question_processing_model(self):
+        """
+        Creates a model that performs question processing pruning the
+        embedding layer
+
+        Returns:
+             A TensorFlow Keras model using bidirectional LSTM layers
+        """
+        forward_layer1 = tf.keras.layers.LSTM(self.rnn_size,
+                                              input_shape=(self.max_question_length,),
+                                              return_sequences=True)
+        forward_layer2 = tf.keras.layers.LSTM(self.rnn_size,
+                                              input_shape=(self.rnn_size,))
+        backward_layer1 = tf.keras.layers.LSTM(self.rnn_size,
+                                               input_shape=(self.max_question_length,),
+                                               return_sequences=True,
+                                               go_backwards=True)
+        backward_layer2 = tf.keras.layers.LSTM(self.rnn_size,
+                                               input_shape=(self.rnn_size,),
+                                               go_backwards=True)
+
+        end_step = np.ceil(self.train_generator.__len__() /
+                           self.batch_size).astype(np.int32) * self.max_epochs
+
+        pruning_params = {
+            'pruning_schedule': tfmot.sparsity.keras.PolynomialDecay(initial_sparsity=self.initial_sparsity,
+                                                                     final_sparsity=self.final_sparsity,
+                                                                     begin_step=0,
+                                                                     end_step=end_step),
+        }
+
+        return tf.keras.models.Sequential([
+            self.question_inputs,
+            tfmot.sparsity.keras.prune_low_magnitude(
+                tf.keras.layers.Embedding(self.embedding_matrix.shape[0],
+                                          self.embedding_size,
+                                          weights=[self.embedding_matrix],
+                                          input_length=self.max_question_length),
+                **pruning_params),
+            tf.keras.layers.Bidirectional(forward_layer1, backward_layer=backward_layer1),
+            tf.keras.layers.Bidirectional(forward_layer2, backward_layer=backward_layer2)
+        ])
+
     def create_model(self):
         image_model = self.image_inputs
 
@@ -122,8 +170,9 @@ class Lstm_cnn_pruned_trainer(Lstm_cnn_trainer):
                            self.batch_size).astype(np.int32) * self.max_epochs
 
         pruning_params = {
-            'pruning_schedule': tfmot.sparsity.keras.PolynomialDecay(initial_sparsity=0.2,
-                                                                     final_sparsity=0.8, begin_step=0,
+            'pruning_schedule': tfmot.sparsity.keras.PolynomialDecay(initial_sparsity=self.initial_sparsity,
+                                                                     final_sparsity=self.final_sparsity,
+                                                                     begin_step=0,
                                                                      end_step=end_step),
         }
 
@@ -160,7 +209,9 @@ class Lstm_cnn_pruned_trainer(Lstm_cnn_trainer):
                                  epochs=self.max_epochs,
                                  callbacks=callbacks)
 
-        self.model.save(save_path)
+        _, file = tempfile.mkstemp('.h5')
+        tf.keras.models.save_model(self.model, file, include_optimizer=False)
+
         return history
 
 
@@ -386,12 +437,19 @@ if __name__ == '__main__':
     input_json = "data/data_prepro.json"
     input_h5 = "data/data_prepro.h5"
     input_glove_npy = "D:/Part2Project/word_embeddings.npy"
-    train_feature_file = "D:/Part2Project/train_new.npy"
-    valid_feature_file = "D:/Part2Project/val_new.npy"
+    #train_feature_file = "D:/Part2Project/train_new.npy"
+    #valid_feature_file = "D:/Part2Project/val_new.npy"
+    train_feature_file = "D:/Part2Project/train30002.npy"
+    valid_feature_file = "D:/Part2Project/val30002.npy"
     output = "D:/Part2Project/saved_model/lstm_cnn_model"
 
     tf.keras.backend.clear_session()
+    """
     vqa = Full_attention_trainer(input_json, input_h5, input_glove_npy,
                                  train_feature_object=Feature_extracted_mobilenet_3by3(train_feature_file),
                                  valid_feature_object=Feature_extracted_mobilenet_3by3(valid_feature_file))
+    """
+    vqa = Pruned_lstm_cnn_trainer(input_json, input_h5, input_glove_npy,
+                                  train_feature_object=Feature_extracted_mobilenet_1by1(train_feature_file),
+                                  valid_feature_object=Feature_extracted_mobilenet_1by1(valid_feature_file))
     history = vqa.train_model(output)

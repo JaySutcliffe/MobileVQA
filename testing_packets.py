@@ -4,7 +4,6 @@ import numpy as np
 
 from data_generator import VQA_data_generator
 
-
 hdf = False
 
 if __name__ == '__main__':
