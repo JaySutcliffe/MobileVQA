@@ -116,87 +116,24 @@ class Lstm_cnn_trainer():
         self.model = self.create_model()
 
 
+def apply_pruning_to_dense_embedding(layer):
+    if isinstance(layer, tf.keras.layers.Dense):
+        return tfmot.sparsity.keras.prune_low_magnitude(layer)
+    if isinstance(layer, tf.keras.layers.Embedding):
+        return tfmot.sparsity.keras.prune_low_magnitude(layer)
+    return layer
+
+
 class Pruned_lstm_cnn_trainer(Lstm_cnn_trainer):
     initial_sparsity = 0.5
     final_sparsity = 0.8
 
-    def create_question_processing_model(self):
-        """
-        Creates a model that performs question processing pruning the
-        embedding layer
-
-        Returns:
-             A TensorFlow Keras model using bidirectional LSTM layers
-        """
-        forward_layer1 = tf.keras.layers.LSTM(self.rnn_size,
-                                              input_shape=(self.max_question_length,),
-                                              return_sequences=True)
-        forward_layer2 = tf.keras.layers.LSTM(self.rnn_size,
-                                              input_shape=(self.rnn_size,))
-        backward_layer1 = tf.keras.layers.LSTM(self.rnn_size,
-                                               input_shape=(self.max_question_length,),
-                                               return_sequences=True,
-                                               go_backwards=True)
-        backward_layer2 = tf.keras.layers.LSTM(self.rnn_size,
-                                               input_shape=(self.rnn_size,),
-                                               go_backwards=True)
-
-        end_step = np.ceil(self.train_generator.__len__() /
-                           self.batch_size).astype(np.int32) * self.max_epochs
-
-        pruning_params = {
-            'pruning_schedule': tfmot.sparsity.keras.PolynomialDecay(initial_sparsity=self.initial_sparsity,
-                                                                     final_sparsity=self.final_sparsity,
-                                                                     begin_step=0,
-                                                                     end_step=end_step),
-        }
-
-        return tf.keras.models.Sequential([
-            self.question_inputs,
-            tfmot.sparsity.keras.prune_low_magnitude(
-                tf.keras.layers.Embedding(self.embedding_matrix.shape[0],
-                                          self.embedding_size,
-                                          weights=[self.embedding_matrix],
-                                          input_length=self.max_question_length),
-                **pruning_params),
-            tf.keras.layers.Bidirectional(forward_layer1, backward_layer=backward_layer1),
-            tf.keras.layers.Bidirectional(forward_layer2, backward_layer=backward_layer2)
-        ])
-
-    def create_model(self):
-        image_model = self.image_inputs
-
-        end_step = np.ceil(self.train_generator.__len__() /
-                           self.batch_size).astype(np.int32) * self.max_epochs
-
-        pruning_params = {
-            'pruning_schedule': tfmot.sparsity.keras.PolynomialDecay(initial_sparsity=self.initial_sparsity,
-                                                                     final_sparsity=self.final_sparsity,
-                                                                     begin_step=0,
-                                                                     end_step=end_step),
-        }
-
-        image_model_output = tfmot.sparsity.keras.prune_low_magnitude(
-            tf.keras.layers.Dense(self.dense_hidden_size, activation='tanh'),
-            **pruning_params)(image_model)
-
-        question_model = self.create_question_processing_model()
-        question_dense = tfmot.sparsity.keras.prune_low_magnitude(
-            tf.keras.layers.Dense(self.dense_hidden_size, activation='tanh'),
-            **pruning_params)(question_model.output)
-
-        linked = tf.keras.layers.multiply([image_model_output, question_dense])
-        next = tfmot.sparsity.keras.prune_low_magnitude(
-            tf.keras.layers.Dense(self.dense_hidden_size, activation='tanh'),
-            **pruning_params)(linked)
-        outputs = tfmot.sparsity.keras.prune_low_magnitude(
-            tf.keras.layers.Dense(self.output_size, activation='softmax'),
-            **pruning_params)(next)
-
-        return tf.keras.Model(inputs=[self.image_inputs, self.question_inputs], outputs=outputs,
-                              name=__class__.__name__ + "_model")
-
     def train_model(self, save_path):
+        self.model = tf.keras.models.clone_model(
+            self.model,
+            clone_function=apply_pruning_to_dense_embedding,
+        )
+
         self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0003),
                            loss=tf.keras.losses.SparseCategoricalCrossentropy(),
                            metrics=['accuracy'])
