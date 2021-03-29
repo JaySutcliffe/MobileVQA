@@ -21,7 +21,7 @@ class Lstm_cnn_trainer():
 
     # Model configuration variables
     max_epochs = 30
-    patience = 5
+    patience = 3
     batch_size = 500
     embedding_size = 300
     rnn_size = 512
@@ -117,7 +117,8 @@ class Lstm_cnn_trainer():
 
 
 class Pruned_lstm_cnn_trainer(Lstm_cnn_trainer):
-    initial_sparsity = 0.2
+    max_epochs = 1
+    initial_sparsity = 0.1
     final_sparsity = 0.8
 
     def create_question_processing_model(self):
@@ -209,9 +210,10 @@ class Pruned_lstm_cnn_trainer(Lstm_cnn_trainer):
                                  epochs=self.max_epochs,
                                  callbacks=callbacks)
 
-        _, file = tempfile.mkstemp('.h5')
-        tf.keras.models.save_model(self.model, file, include_optimizer=False)
+        # Removes training variables
+        self.model = tfmot.sparsity.keras.strip_pruning(self.model)
 
+        self.model.save(save_path)
         return history
 
 
