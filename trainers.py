@@ -155,6 +155,8 @@ class Pruned_lstm_cnn_trainer(Lstm_cnn_trainer):
                                  epochs=self.max_epochs,
                                  callbacks=callbacks)
 
+        self.model.summary()
+
         # Removes training variables
         self.model = tfmot.sparsity.keras.strip_pruning(self.model)
 
