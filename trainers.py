@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import tensorflow_model_optimization as tfmot
-import tempfile
+from functools import partial
 
 from attention_layers import ModularCoAttention, MultiModalAttention
 from cnn import Feature_extracted_mobilenet_1by1, Feature_extracted_mobilenet_3by3
@@ -116,11 +116,11 @@ class Lstm_cnn_trainer():
         self.model = self.create_model()
 
 
-def apply_pruning_to_dense_embedding(layer):
+def apply_pruning_to_dense_embedding(layer, params):
     if isinstance(layer, tf.keras.layers.Dense):
-        return tfmot.sparsity.keras.prune_low_magnitude(layer)
+        return tfmot.sparsity.keras.prune_low_magnitude(layer, **params)
     if isinstance(layer, tf.keras.layers.Embedding):
-        return tfmot.sparsity.keras.prune_low_magnitude(layer)
+        return tfmot.sparsity.keras.prune_low_magnitude(layer, **params)
     return layer
 
 
@@ -129,9 +129,18 @@ class Pruned_lstm_cnn_trainer(Lstm_cnn_trainer):
     final_sparsity = 0.8
 
     def train_model(self, save_path):
+        end_step = self.train_generator.__len__() * self.max_epochs
+
+        pruning_params = {
+            'pruning_schedule': tfmot.sparsity.keras.PolynomialDecay(initial_sparsity=self.initial_sparsity,
+                                                                     final_sparsity=self.final_sparsity,
+                                                                     begin_step=0,
+                                                                     end_step=end_step),
+        }
+
         self.model = tf.keras.models.clone_model(
             self.model,
-            clone_function=apply_pruning_to_dense_embedding,
+            clone_function=partial(apply_pruning_to_dense_embedding, params=pruning_params),
         )
 
         self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0003),
