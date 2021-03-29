@@ -117,8 +117,7 @@ class Lstm_cnn_trainer():
 
 
 class Pruned_lstm_cnn_trainer(Lstm_cnn_trainer):
-    max_epochs = 1
-    initial_sparsity = 0.1
+    initial_sparsity = 0.5
     final_sparsity = 0.8
 
     def create_question_processing_model(self):
