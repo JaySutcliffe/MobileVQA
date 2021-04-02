@@ -276,7 +276,7 @@ class Soft_attention_trainer(Lstm_cnn_trainer):
         attention_input = non_linear_layer(self.dense_hidden_size, non_linear_input)
         attention_output = tf.keras.layers.Dense(1)(attention_input)
         attention_output = tf.keras.layers.Reshape((9,))(attention_output)
-        attention_output = tf.keras.layers.Dense(9, activation="softmax", use_bias=False)(attention_output)
+        attention_output = tf.nn.softmax(attention_output)
         attention_image_features = tf.keras.layers.Dot(axes=(1, 1))([attention_output, image_features])
 
         attention_final_dense = non_linear_layer(self.dense_hidden_size, attention_image_features)
