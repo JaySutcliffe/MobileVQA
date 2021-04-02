@@ -249,9 +249,15 @@ class Attention_trainer(Lstm_cnn_trainer):
                               name=__class__.__name__ + "_model")
 
 
+def non_linear_layer(size, x):
+    y_til = tf.keras.layers.Dense(size, activation='tanh')(x)
+    g = tf.keras.layers.Dense(size, activation='sigmoid')(x)
+    return tf.keras.layers.multiply([y_til, g])
+
+
 class Soft_attention_trainer(Lstm_cnn_trainer):
     output_size = 3000
-    vocabulary_size = 13800
+    dense_hidden_size = 512
     image_inputs = tf.keras.Input(shape=(3, 3, 1280))
 
     def create_model(self):
@@ -263,23 +269,19 @@ class Soft_attention_trainer(Lstm_cnn_trainer):
         """
         image_features = tf.keras.layers.Reshape((9, 1280))(self.image_inputs)
         question_model = self.create_question_processing_model()
-        question_dense_features = tf.keras.layers.Dense(self.dense_hidden_size, activation='tanh')(
-            question_model.output)
+        question_dense = non_linear_layer(self.dense_hidden_size, question_model.output)
 
         question_stack = tf.keras.layers.RepeatVector(9)(question_model.output)
         non_linear_input = tf.keras.layers.concatenate([image_features, question_stack], axis=-1)
-        y = tf.keras.layers.Dense(512, activation="tanh")(non_linear_input)
-        g = tf.keras.layers.Dense(512, activation="sigmoid")(non_linear_input)
-        attention_input = tf.keras.layers.multiply([y, g])
+        attention_input = non_linear_layer(self.dense_hidden_size, non_linear_input)
         attention_output = tf.keras.layers.Dense(1)(attention_input)
         attention_output = tf.keras.layers.Reshape((9,))(attention_output)
         attention_output = tf.keras.layers.Dense(9, activation="softmax", use_bias=False)(attention_output)
         attention_image_features = tf.keras.layers.Dot(axes=(1, 1))([attention_output, image_features])
 
-        attention_final_dense = tf.keras.layers.Dense(self.dense_hidden_size, activation="tanh")(
-            attention_image_features)
-        linked = tf.keras.layers.multiply([attention_final_dense, question_dense_features])
-        next = tf.keras.layers.Dense(self.output_size, activation="tanh")(linked)
+        attention_final_dense = non_linear_layer(self.dense_hidden_size, attention_image_features)
+        linked = tf.keras.layers.multiply([attention_final_dense, question_dense])
+        next = non_linear_layer(self.dense_hidden_size, linked)
         outputs = tf.keras.layers.Dense(self.output_size, activation="sigmoid")(next)
 
         return tf.keras.Model(inputs=[self.image_inputs, self.question_inputs], outputs=outputs,
@@ -299,7 +301,7 @@ class Soft_attention_trainer(Lstm_cnn_trainer):
         self.model.save(save_path)
         return history
 
-    def __init__(self, input_json, input_h5,
+    def __init__(self, input_json, input_h5, input_glove_npy,
                  train_feature_object,
                  valid_feature_object):
         self.train_generator = VQA_soft_data_generator(
@@ -308,6 +310,7 @@ class Soft_attention_trainer(Lstm_cnn_trainer):
         self.val_generator = VQA_soft_data_generator(
             input_json, input_h5, train=False, feature_object=valid_feature_object,
             batch_size=self.batch_size)
+        self.set_embedding_matrix(input_glove_npy)
         self.model = self.create_model()
 
 
@@ -384,19 +387,20 @@ if __name__ == '__main__':
     input_json = "data/data_prepro.json"
     input_h5 = "data/data_prepro.h5"
     input_glove_npy = "D:/Part2Project/word_embeddings.npy"
-    #train_feature_file = "D:/Part2Project/train_new.npy"
-    #valid_feature_file = "D:/Part2Project/val_new.npy"
-    train_feature_file = "D:/Part2Project/train30002.npy"
-    valid_feature_file = "D:/Part2Project/val30002.npy"
+    train_feature_file = "D:/Part2Project/train_new.npy"
+    valid_feature_file = "D:/Part2Project/val_new.npy"
+    #train_feature_file = "D:/Part2Project/train30002.npy"
+    #valid_feature_file = "D:/Part2Project/val30002.npy"
     output = "D:/Part2Project/saved_model/lstm_cnn_model"
 
     tf.keras.backend.clear_session()
-    """
-    vqa = Full_attention_trainer(input_json, input_h5, input_glove_npy,
+    vqa = Soft_attention_trainer(input_json, input_h5, input_glove_npy,
                                  train_feature_object=Feature_extracted_mobilenet_3by3(train_feature_file),
                                  valid_feature_object=Feature_extracted_mobilenet_3by3(valid_feature_file))
+
     """
     vqa = Pruned_lstm_cnn_trainer(input_json, input_h5, input_glove_npy,
                                   train_feature_object=Feature_extracted_mobilenet_1by1(train_feature_file),
                                   valid_feature_object=Feature_extracted_mobilenet_1by1(valid_feature_file))
+    """
     history = vqa.train_model(output)
