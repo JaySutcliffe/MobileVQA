@@ -268,6 +268,7 @@ class Soft_attention_trainer(Lstm_cnn_trainer):
             Attention VQA model
         """
         image_features = tf.keras.layers.Reshape((9, 1280))(self.image_inputs)
+        image_features = tf.keras.layers.LayerNormalization(axis=-1)(image_features)
         question_model = self.create_question_processing_model()
         question_dense = non_linear_layer(self.dense_hidden_size, question_model.output)
 
