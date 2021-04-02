@@ -288,7 +288,7 @@ class Soft_attention_trainer(Lstm_cnn_trainer):
                               name=__class__.__name__ + "_model")
 
     def train_model(self, save_path):
-        self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0003),
+        self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
                            loss="binary_crossentropy",
                            metrics=['accuracy'])
 
