@@ -3,6 +3,8 @@ import tensorflow as tf
 import h5py
 import json
 
+from cnn import Feature_extracted_mobilenet_1by1
+
 
 def right_align(seq, lengths):
     v = np.zeros(np.shape(seq))
@@ -47,12 +49,15 @@ class VQA_data_generator(tf.keras.utils.Sequence):
             temp = hf.get('ans_' + self.mode)
             self.data['answers'] = np.array(temp) - 1
 
-        # Removes questions with answers outside of the highest entered anwers
+            temp = hf.get('question_id_' + self.mode)
+            self.data['ids'] = np.array(temp)
+
+        # Removes questions with answers outside of the highest entered answers
         self.data['questions'] = self.data['questions'][self.data['answers'] < self.answer_count]
         self.data['length_q'] = self.data['length_q'][self.data['answers'] < self.answer_count]
         self.data['img_list'] = self.data['img_list'][self.data['answers'] < self.answer_count]
+        self.data['ids'] = self.data['ids'][self.data['answers'] < self.answer_count]
         self.data['answers'] = self.data['answers'][self.data['answers'] < self.answer_count]
-
 
         # Aligns questions to the left or right
         self.data['questions'] = align(self.data['questions'],
@@ -75,6 +80,8 @@ class VQA_data_generator(tf.keras.utils.Sequence):
         self.get_data()
         self.on_epoch_end()
         self.unique_features = feature_object
+
+        #feats = feature_object.get(30316)
 
     def __len__(self):
         return int(np.floor(len(self.data['questions']) / self.batch_size))
@@ -106,6 +113,7 @@ class VQA_data_generator(tf.keras.utils.Sequence):
 
 if __name__ == '__main__':
     vqa_gen = VQA_data_generator('data/data_prepro.json', 'data/data_prepro.h5', train=False,
-                                 feature_object='D:/Part2Project/val30002.npy')
+                                 feature_object=
+                                 Feature_extracted_mobilenet_1by1('D:/Part2Project/val30002.npy'))
     [image_features, questions], answers = vqa_gen.__getitem__(0)
     print(questions[0])

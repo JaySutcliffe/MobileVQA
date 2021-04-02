@@ -17,6 +17,11 @@ def main(input_json):
     # Cutting off warmup inferences
     data["cpu_usage"] = data["cpu_usage"][50:]
 
+    fig1, ax1 = plt.subplots()
+    ax1.set_title('Inference times')
+    ax1.boxplot([data['cnn_inference_time'],data['nlp_inference_time']], showfliers=False)
+    plt.show()
+
     # Finds maximum length for the plot
     max_length = 0
     for l in data["cpu_usage"]:

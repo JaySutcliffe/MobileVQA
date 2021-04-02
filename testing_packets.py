@@ -2,15 +2,17 @@ import sys
 import h5py
 import numpy as np
 
+from cnn import Feature_extracted_mobilenet_1by1
 from data_generator import VQA_data_generator
 
+# Set to false, problem with hdf files is lack of
+# Java library support
 hdf = False
 
 if __name__ == '__main__':
     vqa_gen = VQA_data_generator('data/data_prepro.json', 'data/data_prepro.h5', train=False,
-                                 train_cnn=False, feature_file='D:/Part2Project/val.npy',
-                                 batch_size=20, shuffle=True)
-    vqa_gen.on_epoch_end()
+                                 feature_object=
+                                 Feature_extracted_mobilenet_1by1('D:/Part2Project/val30002.npy'))
     if hdf:
         for i in range(0, 20):
             [image_features, questions], answers = vqa_gen.__getitem__(i)
