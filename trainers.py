@@ -275,7 +275,7 @@ class Soft_attention_trainer(Lstm_cnn_trainer):
         question_stack = tf.keras.layers.RepeatVector(9)(question_model.output)
         non_linear_input = tf.keras.layers.concatenate([image_features, question_stack], axis=-1)
         attention_input = non_linear_layer(self.dense_hidden_size, non_linear_input)
-        attention_output = tf.keras.layers.Dense(1)(attention_input)
+        attention_output = tf.keras.layers.Dense(1, use_bias=False)(attention_input)
         attention_output = tf.keras.layers.Reshape((1, 9))(attention_output)
         attention_output = tf.nn.softmax(attention_output, axis=-1)
         attention_image_features = tf.reduce_sum(tf.matmul(attention_output, image_features), axis=-1)
