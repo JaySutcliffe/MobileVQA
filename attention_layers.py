@@ -235,7 +235,6 @@ class MultiModalAttention(tf.keras.layers.Layer):
         self.final = tf.keras.layers.Dense(output_size, activation="sigmoid")
         self.reshape = tf.keras.layers.Reshape((output_size,))
 
-
     def call(self, y, x):
         y_dash = self.question_dot1([tf.keras.activations.softmax(self.question_mlp(y)), y])
         x_dash = self.image_dot1([tf.keras.activations.softmax(self.image_mlp(x)), x])

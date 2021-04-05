@@ -250,10 +250,10 @@ class Attention_trainer(Lstm_cnn_trainer):
 
 
 def non_linear_layer(size, x):
-    y_til = tf.keras.layers.Dense(size, activation='tanh')(x)
-    g = tf.keras.layers.Dense(size, activation='sigmoid')(x)
-    return tf.keras.layers.multiply([y_til, g])
-
+    #y_til = tf.keras.layers.Dense(size, activation='tanh')(x)
+    #g = tf.keras.layers.Dense(size, activation='sigmoid')(x)
+    #return tf.keras.layers.multiply([y_til, g])
+    return tf.keras.layers.Dense(size, activation='tanh')(x)
 
 class Soft_attention_trainer(Lstm_cnn_trainer):
     output_size = 3000
@@ -268,7 +268,7 @@ class Soft_attention_trainer(Lstm_cnn_trainer):
             Attention VQA model
         """
         image_features = tf.keras.layers.Reshape((9, 1280))(self.image_inputs)
-        image_features = tf.keras.layers.LayerNormalization(axis=-1)(image_features)
+        #image_features = tf.keras.layers.LayerNormalization(axis=-1)(image_features)
         question_model = self.create_question_processing_model()
         question_dense = non_linear_layer(self.dense_hidden_size, question_model.output)
 
