@@ -28,6 +28,7 @@ class Lstm_cnn_trainer():
     dense_hidden_size = 1024
     output_size = 1000
     learning_rate = 0.0003
+    dropout_rate = 0.2
 
     image_inputs = tf.keras.Input(shape=(image_feature_size,))
     question_inputs = tf.keras.Input(shape=(max_question_length,))
@@ -78,7 +79,9 @@ class Lstm_cnn_trainer():
         question_dense = tf.keras.layers.Dense(
             self.dense_hidden_size, activation='tanh')(question_model.output)
         linked = tf.keras.layers.multiply([image_model_output, question_dense])
+        linked = tf.keras.layers.Dropout(self.dropout_rate)(linked)
         next = tf.keras.layers.Dense(self.output_size, activation="tanh")(linked)
+        next = tf.layers.Dropout(self.dropout_rate)(next)
         outputs = tf.keras.layers.Dense(self.output_size, activation="softmax")(next)
 
         return tf.keras.Model(inputs=[self.image_inputs, self.question_inputs],
