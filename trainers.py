@@ -81,7 +81,7 @@ class Lstm_cnn_trainer():
         linked = tf.keras.layers.multiply([image_model_output, question_dense])
         linked = tf.keras.layers.Dropout(self.dropout_rate)(linked)
         next = tf.keras.layers.Dense(self.output_size, activation="tanh")(linked)
-        next = tf.layers.Dropout(self.dropout_rate)(next)
+        next = tf.keras.layers.Dropout(self.dropout_rate)(next)
         outputs = tf.keras.layers.Dense(self.output_size, activation="softmax")(next)
 
         return tf.keras.Model(inputs=[self.image_inputs, self.question_inputs],
@@ -397,14 +397,13 @@ if __name__ == '__main__':
     #valid_feature_file = "D:/Part2Project/val30002.npy"
     output = "D:/Part2Project/saved_model/lstm_cnn_model"
 
+    """
     tf.keras.backend.clear_session()
     vqa = Soft_attention_trainer(input_json, input_h5, input_glove_npy,
                                  train_feature_object=Feature_extracted_mobilenet_3by3(train_feature_file),
                                  valid_feature_object=Feature_extracted_mobilenet_3by3(valid_feature_file))
-
     """
-    vqa = Pruned_lstm_cnn_trainer(input_json, input_h5, input_glove_npy,
+    vqa = Lstm_cnn_trainer(input_json, input_h5, input_glove_npy,
                                   train_feature_object=Feature_extracted_mobilenet_1by1(train_feature_file),
                                   valid_feature_object=Feature_extracted_mobilenet_1by1(valid_feature_file))
-    """
     history = vqa.train_model(output)
