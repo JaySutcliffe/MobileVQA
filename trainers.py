@@ -130,9 +130,13 @@ def apply_pruning_to_dense_embedding(layer, params):
 class Pruned_lstm_cnn_trainer(Lstm_cnn_trainer):
     initial_sparsity = 0.5
     final_sparsity = 0.8
+    prune_max_epochs = 5
+
+    def load_model(self, load_path):
+        self.model = tf.keras.models.load_model(load_path)
 
     def train_model(self, save_path):
-        end_step = self.train_generator.__len__() * self.max_epochs
+        end_step = self.train_generator.__len__() * self.prune_max_epochs
 
         pruning_params = {
             'pruning_schedule': tfmot.sparsity.keras.PolynomialDecay(initial_sparsity=self.initial_sparsity,
@@ -155,7 +159,7 @@ class Pruned_lstm_cnn_trainer(Lstm_cnn_trainer):
 
         history = self.model.fit(x=self.train_generator,
                                  validation_data=self.val_generator,
-                                 epochs=self.max_epochs,
+                                 epochs=self.prune_max_epochs,
                                  callbacks=callbacks)
 
         # Removes training variables
