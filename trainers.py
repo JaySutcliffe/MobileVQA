@@ -257,14 +257,13 @@ class Attention_trainer(Lstm_cnn_trainer):
 
 
 def non_linear_layer(size, x):
-    #y_til = tf.keras.layers.Dense(size, activation='tanh')(x)
-    #g = tf.keras.layers.Dense(size, activation='sigmoid')(x)
-    #return tf.keras.layers.multiply([y_til, g])
-    return tf.keras.layers.Dense(size, activation='tanh')(x)
+    y_til = tf.keras.layers.Dense(size, activation='tanh')(x)
+    g = tf.keras.layers.Dense(size, activation='sigmoid')(x)
+    return tf.keras.layers.multiply([y_til, g])
 
 class Soft_attention_trainer(Lstm_cnn_trainer):
     output_size = 3000
-    dense_hidden_size = 1024
+    dense_hidden_size = 512
     image_inputs = tf.keras.Input(shape=(3, 3, 1280))
 
     def create_model(self):
@@ -282,6 +281,7 @@ class Soft_attention_trainer(Lstm_cnn_trainer):
         question_stack = tf.keras.layers.RepeatVector(9)(question_model.output)
         non_linear_input = tf.keras.layers.concatenate([image_features, question_stack], axis=-1)
         attention_input = non_linear_layer(self.dense_hidden_size, non_linear_input)
+        attention_input = tf.keras.layers.Dropout(self.dropout_rate)(attention_input)
         attention_output = tf.keras.layers.Dense(1, use_bias=False)(attention_input)
         attention_output = tf.keras.layers.Reshape((1, 9))(attention_output)
         attention_output = tf.nn.softmax(attention_output, axis=-1)
@@ -289,14 +289,16 @@ class Soft_attention_trainer(Lstm_cnn_trainer):
 
         attention_final_dense = non_linear_layer(self.dense_hidden_size, attention_image_features)
         linked = tf.keras.layers.multiply([attention_final_dense, question_dense])
+        linked = tf.keras.layers.Dropout(self.dropout_rate)(linked)
         next = non_linear_layer(self.dense_hidden_size, linked)
+        next = tf.keras.layers.Dropout(self.dropout_rate)(next)
         outputs = tf.keras.layers.Dense(self.output_size, activation="sigmoid")(next)
 
         return tf.keras.Model(inputs=[self.image_inputs, self.question_inputs], outputs=outputs,
                               name=__class__.__name__ + "_model")
 
     def train_model(self, save_path):
-        self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0003),
+        self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
                            loss="binary_crossentropy",
                            metrics=['accuracy'])
 
@@ -401,7 +403,6 @@ if __name__ == '__main__':
     #valid_feature_file = "D:/Part2Project/val30002.npy"
     output = "D:/Part2Project/saved_model/lstm_cnn_model"
 
-    """
     tf.keras.backend.clear_session()
     vqa = Soft_attention_trainer(input_json, input_h5, input_glove_npy,
                                  train_feature_object=Feature_extracted_mobilenet_3by3(train_feature_file),
@@ -410,4 +411,5 @@ if __name__ == '__main__':
     vqa = Lstm_cnn_trainer(input_json, input_h5, input_glove_npy,
                                   train_feature_object=Feature_extracted_mobilenet_1by1(train_feature_file),
                                   valid_feature_object=Feature_extracted_mobilenet_1by1(valid_feature_file))
+    """
     history = vqa.train_model(output)
