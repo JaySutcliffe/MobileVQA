@@ -65,11 +65,14 @@ def get_mobilenet_v2_3by3():
     model = tf.keras.applications.MobileNetV2(include_top=False,
                                               weights='imagenet',
                                               input_shape=(224, 224, 3))
-    avg_pool = tf.keras.layers.AveragePooling2D(
-        pool_size=(3, 3), strides=2, padding='valid', data_format=None)
+    #avg_pool = tf.keras.layers.AveragePooling2D(
+    #    pool_size=(3, 3), strides=2, padding='valid', data_format=None)
+    avg_pool = tf.keras.layers.MaxPool2D(
+        pool_size=(3, 3), strides=3, padding='same', data_format=None)
     outputs = avg_pool(model.layers[-1].output)
-    return tf.keras.Model(model.input, outputs=outputs)
-
+    model = tf.keras.Model(model.input, outputs=outputs)
+    model.summary()
+    return model
 
 def process_all_images(model_number, input_json, train, result):
     """

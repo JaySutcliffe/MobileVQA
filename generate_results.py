@@ -116,7 +116,7 @@ if __name__ == "__main__":
                         help='1 for VGG19, 2 MobileNetv2, 3 MobileNetv2 3x3')
     parser.add_argument('--max_length', type=int, default=26,
                         help='26 normally, 14 for attention models')
-    parser.add_argument('--output_json', default='data/full_test_result.json',
+    parser.add_argument('--output_json', default='data/test_results2.json',
                         help='output json file to store the results')
 
     args = parser.parse_args()
@@ -128,15 +128,14 @@ if __name__ == "__main__":
         feature_object = Feature_extracted_mobilenet_3by3(params['feature_file'])
         print(feature_object.get(0).shape)
 
-    """
     store_results(params['model_path'],
                   params['input_json'],
                   params['input_h5'],
                   feature_object,
                   params['max_length'],
                   params['output_json'])
-    """
 
+    """
     model = tf.keras.models.load_model("D:/Part2Project/full_attention_model")
     store_results_keras_model(model,
                               params['input_json'],
@@ -144,3 +143,4 @@ if __name__ == "__main__":
                               feature_object,
                               params['max_length'],
                               params['output_json'])
+    """

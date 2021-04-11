@@ -2,16 +2,26 @@ import argparse
 import json
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 
-def main(input_json):
-    with open(input_json) as data_file:
-        data = json.load(data_file)
+def box_plots(directory):
+    data = {"cnn_inference_times": [],
+            "nlp_inference_times": [],
+            "cpu_usages": []}
+    for i, entry in enumerate(os.scandir(directory)):
+        with open(entry.path) as data_file:
+            item = json.load(data_file)
+            data["cnn_inference_times"].append(item["cnn_inference_time"])
+            data["nlp_inference_times"].append(item["nlp_inference_time"])
+            data["cpu_usages"].append(item["cpu_usage"])
 
-    plt.plot(np.arange(len(data['cnn_inference_time'])), np.array(data["cnn_inference_time"]))
+    for i in range(0, len(data["cpu_usages"])):
+        plt.plot(np.arange(len(data["cnn_inference_times"][i])), np.array(data["cnn_inference_times"][i]))
     plt.show()
 
-    plt.plot(np.arange(len(data['nlp_inference_time'])), np.array(data["nlp_inference_time"]))
+    for i in range(0, len(data["cpu_usages"])):
+        plt.plot(np.arange(len(data["cnn_inference_time"])), np.array(data["cnn_inference_time"]))
     plt.show()
 
     # Cutting off warmup inferences
@@ -19,7 +29,30 @@ def main(input_json):
 
     fig1, ax1 = plt.subplots()
     ax1.set_title('Inference times')
-    ax1.boxplot([data['cnn_inference_time'],data['nlp_inference_time']], showfliers=False)
+    ax1.boxplot([data['cnn_inference_time'], data['nlp_inference_time']], showfliers=False)
+    plt.show()
+
+
+
+def main(input_json):
+    """
+    Displays the usage of a particular input file.
+    """
+    with open(input_json) as data_file:
+        data = json.load(data_file)
+
+    plt.plot(np.arange(len(data["cnn_inference_time"])), np.array(data["cnn_inference_time"]))
+    plt.show()
+
+    plt.plot(np.arange(len(data["nlp_inference_time"])), np.array(data["nlp_inference_time"]))
+    plt.show()
+
+    # Cutting off warmup inferences
+    data["cpu_usage"] = data["cpu_usage"][50:]
+
+    fig1, ax1 = plt.subplots()
+    ax1.set_title('Inference times')
+    ax1.boxplot([data['cnn_inference_time'], data['nlp_inference_time']], showfliers=False)
     plt.show()
 
     # Finds maximum length for the plot
@@ -55,8 +88,11 @@ def main(input_json):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--input_json', default='data/evaluation_output.json',
-                        help='file containing index to word table')
+    parser.add_argument('--input_directory', default='device_results',
+                        help='directory of all files for box plots')
+    parser.add_argument('--input_name', default='evaluation_output.json',
+                        help='target file name')
     args = parser.parse_args()
     params = vars(args)
-    main(params['input_json'])
+    box_plots(params['input_directory'])
+    main(params['input_directory'] + "/" + params['input_name'])
