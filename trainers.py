@@ -75,7 +75,7 @@ class Lstm_cnn_trainer():
             Keras LSTM+CNN VQA model
         """
         if self.normalise:
-            self.image_inputs = tf.keras.layers.LayerNormalization(self.image_inputs, axis=-1)
+            self.image_inputs = tf.keras.layers.LayerNormalization(axis=-1)(self.image_inputs)
 
         image_model_output = tf.keras.layers.Dense(
             self.dense_hidden_size, activation='tanh')(self.image_inputs)
