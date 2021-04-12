@@ -75,10 +75,12 @@ class Lstm_cnn_trainer():
             Keras LSTM+CNN VQA model
         """
         if self.normalise:
-            self.image_inputs = tf.keras.layers.LayerNormalization(axis=-1)(self.image_inputs)
+            image_features = tf.keras.layers.LayerNormalization(axis=1)(self.image_inputs)
+        else:
+            image_features = self.image_inputs
 
         image_model_output = tf.keras.layers.Dense(
-            self.dense_hidden_size, activation='tanh')(self.image_inputs)
+            self.dense_hidden_size, activation='tanh')(image_features)
         question_model = self.create_question_processing_model()
         question_dense = tf.keras.layers.Dense(
             self.dense_hidden_size, activation='tanh')(question_model.output)
@@ -419,6 +421,7 @@ if __name__ == '__main__':
     """
     vqa = Lstm_cnn_trainer(input_json, input_h5, input_glove_npy,
                                   train_feature_object=Feature_extracted_mobilenet_1by1(train_feature_file),
-                                  valid_feature_object=Feature_extracted_mobilenet_1by1(valid_feature_file))
+                                  valid_feature_object=Feature_extracted_mobilenet_1by1(valid_feature_file),
+                          normalise=True)
     vqa.model.summary()
     history = vqa.train_model(output)
