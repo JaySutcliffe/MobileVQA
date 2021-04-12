@@ -21,17 +21,23 @@ def box_plots(directory):
     plt.show()
 
     for i in range(0, len(data["cpu_usages"])):
-        plt.plot(np.arange(len(data["cnn_inference_time"])), np.array(data["cnn_inference_time"]))
+        plt.plot(np.arange(len(data["nlp_inference_times"][i])), np.array(data["nlp_inference_times"][i]))
     plt.show()
 
     # Cutting off warmup inferences
-    data["cpu_usage"] = data["cpu_usage"][50:]
+    for i in range(0, len(data["cpu_usages"])):
+        data["cnn_inference_times"][i] = data["cnn_inference_times"][i][:50]
+        data["nlp_inference_times"][i] = data["nlp_inference_times"][i][:50]
+        data["cpu_usages"][i] = data["cpu_usages"][i][:50]
+
+    print(data["cnn_inference_times"][0])
+    print(data["cnn_inference_times"][1])
+    print(data["cnn_inference_times"][2])
 
     fig1, ax1 = plt.subplots()
-    ax1.set_title('Inference times')
-    ax1.boxplot([data['cnn_inference_time'], data['nlp_inference_time']], showfliers=False)
+    ax1.set_title("Inference times")
+    ax1.boxplot(data["nlp_inference_times"], showfliers=False, vert=False)
     plt.show()
-
 
 
 def main(input_json):

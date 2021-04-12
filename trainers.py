@@ -46,20 +46,16 @@ class Lstm_cnn_trainer():
 
         forward_layer1 = tf.keras.layers.LSTM(self.rnn_size,
                                               input_shape=(self.max_question_length,),
-                                              return_sequences=True,
-                                              unroll=True)
+                                              return_sequences=True)
         forward_layer2 = tf.keras.layers.LSTM(self.rnn_size,
-                                              input_shape=(self.rnn_size,),
-                                              unroll=True)
+                                              input_shape=(self.rnn_size,))
         backward_layer1 = tf.keras.layers.LSTM(self.rnn_size,
                                                input_shape=(self.max_question_length,),
                                                return_sequences=True,
-                                               go_backwards=True,
-                                               unroll=True)
+                                               go_backwards=True)
         backward_layer2 = tf.keras.layers.LSTM(self.rnn_size,
                                                input_shape=(self.rnn_size,),
-                                               go_backwards=True,
-                                               unroll=True)
+                                               go_backwards=True)
 
         return tf.keras.models.Sequential([
             self.question_inputs,
@@ -78,6 +74,9 @@ class Lstm_cnn_trainer():
         Returns:
             Keras LSTM+CNN VQA model
         """
+        if self.normalise:
+            self.image_inputs = tf.keras.layers.LayerNormalization(self.image_inputs, axis=-1)
+
         image_model_output = tf.keras.layers.Dense(
             self.dense_hidden_size, activation='tanh')(self.image_inputs)
         question_model = self.create_question_processing_model()
@@ -113,13 +112,14 @@ class Lstm_cnn_trainer():
 
     def __init__(self, input_json, input_h5, input_glove_npy,
                  train_feature_object,
-                 valid_feature_object):
+                 valid_feature_object, normalise=False):
         self.train_generator = VQA_data_generator(
             input_json, input_h5, feature_object=train_feature_object,
             batch_size=self.batch_size)
         self.val_generator = VQA_data_generator(
             input_json, input_h5, train=False, feature_object=valid_feature_object,
             batch_size=self.batch_size)
+        self.normalise = normalise
         self.set_embedding_matrix(input_glove_npy)
         self.model = self.create_model()
 
