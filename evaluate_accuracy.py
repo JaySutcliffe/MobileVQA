@@ -62,7 +62,7 @@ if __name__ == "__main__":
                         help='the path to the json file')
     parser.add_argument('--question_json', default='data/v2_OpenEnded_mscoco_val2014_questions.json',
                         help='the path to the h5 file')
-    parser.add_argument('--result_json', default='data/pruned_dy_test_results.json',
+    parser.add_argument('--result_json', default='data/store_results_pruned_dy.json',
                         help='the path to the tne Tensorflow Lite mod')
     parser.add_argument('--result_type', default='cnn_lstm_pruned_dy',
                         help='the name of the model used')

@@ -153,6 +153,20 @@ def process_all_images_7by7(model_number, input_json, train, result):
     np.savez(result + str(i // 30000), *image_features)
 
 
+class Feature_extracted_vgg19:
+    """
+    Class to extract 1x1x1280 image features from the VGG19 model
+    """
+
+    def get(self, i):
+        feat = self.feature_file[i]
+        feat = feat.reshape(4096,)
+        return feat
+
+    def __init__(self, feature_file):
+        self.feature_file = np.load(feature_file)
+
+
 class Feature_extracted_mobilenet_1by1:
     """
     Class to extract 1x1x1280 image features from the MobileNetv2 model
@@ -160,8 +174,6 @@ class Feature_extracted_mobilenet_1by1:
 
     def get(self, i):
         feat = self.feature_file[i]
-        #temp = np.sqrt(np.sum(np.multiply(feat, feat), axis=1))
-        #img_feature = np.divide(feat, np.transpose(np.tile(temp, (1280, 1))))
         feat = feat.reshape(1280,)
         return feat
 
