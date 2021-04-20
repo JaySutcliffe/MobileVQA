@@ -98,6 +98,7 @@ def process_all_images(model_number, input_json, train, result):
         model = get_mobilenet_v2()
     else:
         model = get_mobilenet_v2_3by3()
+    model.summary()
 
     dataset = {}
     with open(input_json) as data_file:

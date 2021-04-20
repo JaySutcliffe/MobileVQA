@@ -5,6 +5,31 @@ import matplotlib.pyplot as plt
 import os
 
 
+def size_bar_chart():
+    base_sizes = [65726, 32693, 14429]
+    pruned_sizes = [41791, 21463, 9447]
+
+    x_names = ["Base", "F16", "Dynamic"]
+
+    idxs = np.arange(len(base_sizes))
+
+    plt.xlabel("Model Types")
+    plt.ylabel("Model Size(KB)")
+
+    width = 0.4
+    plt.bar(idxs, base_sizes, width, label='Base')
+    plt.bar(idxs + width, pruned_sizes, width, label='Pruned')
+
+    plt.ylabel("Model Size (KB)")
+    plt.title("Comparison Of Various Compressed Model Sizes")
+
+    plt.xticks(idxs + width / 2, x_names)
+    plt.legend(loc='best')
+    plt.show()
+
+    plt.show()
+
+
 def box_plots(directory):
     data = {"cnn_inference_times": [],
             "nlp_inference_times": [],
@@ -29,10 +54,6 @@ def box_plots(directory):
         data["cnn_inference_times"][i] = data["cnn_inference_times"][i][:50]
         data["nlp_inference_times"][i] = data["nlp_inference_times"][i][:50]
         data["cpu_usages"][i] = data["cpu_usages"][i][:50]
-
-    print(data["cnn_inference_times"][0])
-    print(data["cnn_inference_times"][1])
-    print(data["cnn_inference_times"][2])
 
     fig1, ax1 = plt.subplots()
     ax1.set_title("Inference times")
@@ -100,5 +121,6 @@ if __name__ == '__main__':
                         help='target file name')
     args = parser.parse_args()
     params = vars(args)
+    size_bar_chart()
     box_plots(params['input_directory'])
     main(params['input_directory'] + "/" + params['input_name'])

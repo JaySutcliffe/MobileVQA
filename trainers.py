@@ -114,7 +114,7 @@ class Lstm_cnn_trainer():
 
     def __init__(self, input_json, input_h5, input_glove_npy,
                  train_feature_object,
-                 valid_feature_object, normalise=False):
+                 valid_feature_object, normalise=False, vgg19=False):
         self.train_generator = VQA_data_generator(
             input_json, input_h5, feature_object=train_feature_object,
             batch_size=self.batch_size)
@@ -123,6 +123,9 @@ class Lstm_cnn_trainer():
             batch_size=self.batch_size)
         self.normalise = normalise
         self.set_embedding_matrix(input_glove_npy)
+        if vgg19:
+            self.image_feature_size = 4096
+            self.image_inputs = tf.keras.Input(shape=(self.image_feature_size,))
         self.model = self.create_model()
 
 
@@ -146,10 +149,12 @@ class Pruned_lstm_cnn_trainer(Lstm_cnn_trainer):
         end_step = self.train_generator.__len__() * self.prune_max_epochs
 
         pruning_params = {
-            'pruning_schedule': tfmot.sparsity.keras.PolynomialDecay(initial_sparsity=self.initial_sparsity,
-                                                                     final_sparsity=self.final_sparsity,
-                                                                     begin_step=0,
-                                                                     end_step=end_step),
+            'pruning_schedule':
+                tfmot.sparsity.keras.PolynomialDecay(
+                    initial_sparsity=self.initial_sparsity,
+                    final_sparsity=self.final_sparsity,
+                    begin_step=0,
+                    end_step=end_step),
         }
 
         self.model = tf.keras.models.clone_model(
@@ -419,7 +424,7 @@ if __name__ == '__main__':
                                  train_feature_object=Feature_extracted_mobilenet_3by3(train_feature_file),
                                  valid_feature_object=Feature_extracted_mobilenet_3by3(valid_feature_file))
     """
-    vqa = Lstm_cnn_trainer(input_json, input_h5, input_glove_npy,
+    vqa = Pruned_lstm_cnn_trainer(input_json, input_h5, input_glove_npy,
                                   train_feature_object=Feature_extracted_mobilenet_1by1(train_feature_file),
                                   valid_feature_object=Feature_extracted_mobilenet_1by1(valid_feature_file),
                           normalise=True)
