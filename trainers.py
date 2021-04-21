@@ -233,6 +233,7 @@ class Soft_lstm_cnn_trainer(Lstm_cnn_trainer):
 
 
 class Attention_trainer(Lstm_cnn_trainer):
+    dense_hidden_size = 512
     image_inputs = tf.keras.Input(shape=(3, 3, 1280))
 
     def create_model(self):
@@ -250,8 +251,8 @@ class Attention_trainer(Lstm_cnn_trainer):
 
         question_stack = tf.keras.layers.RepeatVector(9)(question_model.output)
         non_linear_input = tf.keras.layers.concatenate([image_features, question_stack], axis=-1)
-        y = tf.keras.layers.Dense(512, activation="tanh")(non_linear_input)
-        g = tf.keras.layers.Dense(512, activation="sigmoid")(non_linear_input)
+        y = tf.keras.layers.Dense(self.dense_hidden_size, activation="tanh")(non_linear_input)
+        g = tf.keras.layers.Dense(self.dense_hidden_size, activation="sigmoid")(non_linear_input)
         attention_input = tf.keras.layers.multiply([y, g])
         attention_output = tf.keras.layers.Dense(1)(attention_input)
         attention_output = tf.keras.layers.Reshape((9,))(attention_output)
@@ -412,15 +413,15 @@ if __name__ == '__main__':
     input_json = "data/data_prepro.json"
     input_h5 = "data/data_prepro.h5"
     input_glove_npy = "D:/Part2Project/word_embeddings.npy"
-    #train_feature_file = "D:/Part2Project/train_new.npy"
-    #valid_feature_file = "D:/Part2Project/val_new.npy"
-    train_feature_file = "D:/Part2Project/train30002.npy"
-    valid_feature_file = "D:/Part2Project/val30002.npy"
+    train_feature_file = "D:/Part2Project/train_new.npy"
+    valid_feature_file = "D:/Part2Project/val_new.npy"
+    #train_feature_file = "D:/Part2Project/train30002.npy"
+    #valid_feature_file = "D:/Part2Project/val30002.npy"
     output = "D:/Part2Project/saved_model/lstm_cnn_model"
 
     tf.keras.backend.clear_session()
-    """"
-    vqa = Soft_attention_trainer(input_json, input_h5, input_glove_npy,
+
+    vqa = Attention_trainer(input_json, input_h5, input_glove_npy,
                                  train_feature_object=Feature_extracted_mobilenet_3by3(train_feature_file),
                                  valid_feature_object=Feature_extracted_mobilenet_3by3(valid_feature_file))
     """
@@ -428,5 +429,6 @@ if __name__ == '__main__':
                                   train_feature_object=Feature_extracted_mobilenet_1by1(train_feature_file),
                                   valid_feature_object=Feature_extracted_mobilenet_1by1(valid_feature_file),
                           normalise=True)
+    """
     vqa.model.summary()
     history = vqa.train_model(output)
