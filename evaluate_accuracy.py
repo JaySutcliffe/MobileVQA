@@ -39,10 +39,12 @@ def evaluate_results(annotation_json, question_json, results_json, result_type):
 
     # plot accuracy for various question types
     plt.bar(range(len(vqa_eval.accuracy['perQuestionType'])), vqa_eval.accuracy['perQuestionType'].values(),
+            width=0.8,
             align='center')
     plt.xticks(range(len(vqa_eval.accuracy['perQuestionType'])), vqa_eval.accuracy['perQuestionType'].keys(),
                rotation='0',
-               fontsize=10)
+               fontsize=5)
+    plt.xticks(rotation=90)
     plt.title('Per Question Type Accuracy', fontsize=10)
     plt.xlabel('Question Types', fontsize=10)
     plt.ylabel('Accuracy', fontsize=10)
@@ -62,9 +64,9 @@ if __name__ == "__main__":
                         help='the path to the json file')
     parser.add_argument('--question_json', default='data/v2_OpenEnded_mscoco_val2014_questions.json',
                         help='the path to the h5 file')
-    parser.add_argument('--result_json', default='data/store_results_pruned_dy.json',
-                        help='the path to the tne Tensorflow Lite mod')
-    parser.add_argument('--result_type', default='cnn_lstm_pruned_dy',
+    parser.add_argument('--result_json', default='D:/Downloads/basic_attention_vqa.tflite',
+                        help='the path to the tne Tensorflow Lite model')
+    parser.add_argument('--result_type', default='basic_attention',
                         help='the name of the model used')
 
     args = parser.parse_args()

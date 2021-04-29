@@ -96,9 +96,11 @@ class Lstm_cnn_trainer():
 
     def train_model(self, save_path):
         """
-        Trains the model and then outputs it to the file entered
-        """
+        Trains the model and writes results to file location entered
 
+        Parameters:
+            save_path (str): The file location to write the resulting model to
+        """
         self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=self.learning_rate),
                            loss=tf.keras.losses.SparseCategoricalCrossentropy(),
                            metrics=['accuracy'])
@@ -123,6 +125,7 @@ class Lstm_cnn_trainer():
             batch_size=self.batch_size)
         self.normalise = normalise
         self.set_embedding_matrix(input_glove_npy)
+        # Handling old vgg19 model
         if vgg19:
             self.image_feature_size = 4096
             self.image_inputs = tf.keras.Input(shape=(self.image_feature_size,))
@@ -275,6 +278,43 @@ def non_linear_layer(size, x):
     return tf.keras.layers.multiply([y_til, g])
 
 
+class Attention_trainer2(Lstm_cnn_trainer):
+    output_size = 1000
+    dense_hidden_size = 512
+    image_inputs = tf.keras.Input(shape=(3, 3, 1280))
+
+    def create_model(self):
+        """
+        Creates a VQA model combining an image and question model
+
+        Returns:
+            Attention VQA model
+        """
+        print("here")
+        image_features = tf.keras.layers.Reshape((9, 1280))(self.image_inputs)
+        question_model = self.create_question_processing_model()
+        question_dense = non_linear_layer(self.dense_hidden_size, question_model.output)
+
+        question_stack = tf.keras.layers.RepeatVector(9)(question_model.output)
+        non_linear_input = tf.keras.layers.concatenate([image_features, question_stack], axis=-1)
+        attention_input = non_linear_layer(self.dense_hidden_size, non_linear_input)
+        attention_input = tf.keras.layers.Dropout(self.dropout_rate)(attention_input)
+        attention_output = tf.keras.layers.Dense(1, use_bias=False)(attention_input)
+        attention_output = tf.keras.layers.Reshape((1, 9))(attention_output)
+        attention_output = tf.nn.softmax(attention_output, axis=-1)
+        attention_image_features = tf.reduce_sum(tf.matmul(attention_output, image_features), axis=-1)
+
+        attention_final_dense = non_linear_layer(self.dense_hidden_size, attention_image_features)
+        linked = tf.keras.layers.multiply([attention_final_dense, question_dense])
+        linked = tf.keras.layers.Dropout(self.dropout_rate)(linked)
+        next = non_linear_layer(self.dense_hidden_size, linked)
+        next = tf.keras.layers.Dropout(self.dropout_rate)(next)
+        outputs = tf.keras.layers.Dense(self.output_size, activation="softmax")(next)
+
+        return tf.keras.Model(inputs=[self.image_inputs, self.question_inputs], outputs=outputs,
+                              name=__class__.__name__ + "_model")
+
+
 class Soft_attention_trainer(Lstm_cnn_trainer):
     output_size = 3000
     dense_hidden_size = 512
@@ -353,7 +393,6 @@ class Full_attention_trainer(Lstm_cnn_trainer):
                                       weights=[self.embedding_matrix],
                                       input_length=self.max_question_length),
             tf.keras.layers.LSTM(self.dense_hidden_size, return_sequences=True)
-            #input_shape=(self.max_question_length,)
         ])
 
     def create_model(self):

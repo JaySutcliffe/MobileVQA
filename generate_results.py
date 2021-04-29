@@ -49,8 +49,8 @@ def store_results(model_path, input_json, input_h5,
     for i in range(questions.shape[0]):
         img_feat = np.expand_dims(image_features[i], 0).astype(np.float32)
         ques = np.expand_dims(questions[i], 0).astype(np.float32)
-        interpreter.set_tensor(1, img_feat)
         interpreter.set_tensor(0, ques)
+        interpreter.set_tensor(1, img_feat)
         interpreter.invoke()
         answer_index = int(np.argmax(output()))
         answer = dataset['ix_to_ans'][str(answer_index + 1)]
@@ -111,15 +111,15 @@ if __name__ == "__main__":
     parser.add_argument('--input_h5', default='data/data_prepro.h5',
                         help='the path to the h5 file')
     parser.add_argument('--model_path',
-                        default='C:/Users/jaysu/AndroidStudioProjects/MVQA/app/src/main/ml/vqa_f16.tflite',
+                        default='D:/Downloads/basic_attention_vqa.tflite',
                         help='the path to the tne Tensorflow Lite mod')
-    parser.add_argument('--feature_file', default='D:/Part2Project/val30002.npy',
+    parser.add_argument('--feature_file', default='D:/Part2Project/val_new.npy',
                         help='the file containing the test images')
-    parser.add_argument('--feature_object', type=int, default=2,
+    parser.add_argument('--feature_object', type=int, default=3,
                         help='1 for VGG19, 2 MobileNetv2, 3 MobileNetv2 3x3')
     parser.add_argument('--max_length', type=int, default=26,
                         help='26 normally, 14 for attention models')
-    parser.add_argument('--output_json', default='data/f16_test_results.json',
+    parser.add_argument('--output_json', default='data/basic_attention_test_results.json',
                         help='output json file to store the results')
 
     args = parser.parse_args()

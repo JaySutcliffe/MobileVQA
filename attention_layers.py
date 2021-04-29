@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 
-# Adapted from https://www.tensorflow.org/tutorials/text/transformer
+# Adapted from https://www.tensorflow.org/tutorials/text/transformer 24/2/2021
 def scaled_dot_product_attention(q, k, v, mask):
     """Calculate the attention weights.
     q, k, v must have matching leading dimensions.

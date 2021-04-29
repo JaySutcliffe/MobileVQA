@@ -74,6 +74,7 @@ def get_mobilenet_v2_3by3():
     model.summary()
     return model
 
+
 def process_all_images(model_number, input_json, train, result):
     """
     Processes all images writing the image features to the file location result
