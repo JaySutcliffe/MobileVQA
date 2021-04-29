@@ -280,7 +280,7 @@ def non_linear_layer(size, x):
 
 class Attention_trainer2(Lstm_cnn_trainer):
     output_size = 1000
-    dense_hidden_size = 512
+    dense_hidden_size = 1024
     image_inputs = tf.keras.Input(shape=(3, 3, 1280))
 
     def create_model(self):
