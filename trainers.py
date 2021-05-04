@@ -30,7 +30,6 @@ class Lstm_cnn_trainer():
     learning_rate = 0.0003
     dropout_rate = 0.2
 
-    image_inputs = tf.keras.Input(shape=(image_feature_size,))
     question_inputs = tf.keras.Input(shape=(max_question_length,))
 
     def set_embedding_matrix(self, input_glove_npy):
@@ -117,6 +116,7 @@ class Lstm_cnn_trainer():
     def __init__(self, input_json, input_h5, input_glove_npy,
                  train_feature_object,
                  valid_feature_object, normalise=False, vgg19=False):
+        self.image_inputs = tf.keras.Input(shape=(self.image_feature_size,))
         self.train_generator = VQA_data_generator(
             input_json, input_h5, feature_object=train_feature_object,
             batch_size=self.batch_size)
@@ -269,6 +269,18 @@ class Attention_trainer(Lstm_cnn_trainer):
         return tf.keras.Model(inputs=[self.image_inputs, self.question_inputs], outputs=outputs,
                               name=__class__.__name__ + "_model")
 
+    def __init__(self, input_json, input_h5, input_glove_npy,
+                 train_feature_object,
+                 valid_feature_object):
+        self.train_generator = VQA_data_generator(
+            input_json, input_h5, feature_object=train_feature_object,
+            batch_size=self.batch_size)
+        self.val_generator = VQA_data_generator(
+            input_json, input_h5, train=False, feature_object=valid_feature_object,
+            batch_size=self.batch_size)
+        self.set_embedding_matrix(input_glove_npy)
+        self.model = self.create_model()
+
 
 def non_linear_layer(size, x):
     y_til = tf.keras.layers.Dense(size, activation='tanh')(x)
@@ -289,7 +301,7 @@ class Soft_attention_trainer(Lstm_cnn_trainer):
             Attention VQA model
         """
         image_features = tf.keras.layers.Reshape((9, 1280))(self.image_inputs)
-        #image_features = tf.keras.layers.LayerNormalization(axis=-1)(image_features)
+        # image_features = tf.keras.layers.LayerNormalization(axis=-1)(image_features)
         question_model = self.create_question_processing_model()
         question_dense = non_linear_layer(self.dense_hidden_size, question_model.output)
 
@@ -362,10 +374,10 @@ class Full_attention_trainer(Lstm_cnn_trainer):
         :return: Attention VQA model
         """
         x = tf.keras.layers.Reshape((9, 1280))(self.image_inputs)
-        #x = tf.keras.layers.Dense(512, activation='tanh')(x)
-        #x = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x)
+        # x = tf.keras.layers.Dense(512, activation='tanh')(x)
+        # x = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x)
         y = self.create_question_processing_model()(self.question_inputs)
-        y, x = ModularCoAttention(6, self.dense_hidden_size, 8, 4*self.dense_hidden_size)(y, x)
+        y, x = ModularCoAttention(6, self.dense_hidden_size, 8, 4 * self.dense_hidden_size)(y, x)
         outputs = MultiModalAttention(self.dense_hidden_size, self.output_size)(y, x)
 
         return tf.keras.Model(inputs=[self.image_inputs, self.question_inputs], outputs=outputs,
@@ -415,14 +427,15 @@ if __name__ == '__main__':
     input_glove_npy = "D:/Part2Project/word_embeddings.npy"
     train_feature_file = "D:/Part2Project/train_new.npy"
     valid_feature_file = "D:/Part2Project/val_new.npy"
-    #train_feature_file = "D:/Part2Project/train30002.npy"
-    #valid_feature_file = "D:/Part2Project/val30002.npy"
+    # train_feature_file = "D:/Part2Project/train30002.npy"
+    # valid_feature_file = "D:/Part2Project/val30002.npy"
     output = "D:/Part2Project/saved_model/lstm_cnn_model"
 
     tf.keras.backend.clear_session()
+
     vqa = Attention_trainer(input_json, input_h5, input_glove_npy,
-                                 train_feature_object=Feature_extracted_mobilenet_3by3(train_feature_file),
-                                 valid_feature_object=Feature_extracted_mobilenet_3by3(valid_feature_file))
+                            train_feature_object=Feature_extracted_mobilenet_3by3(train_feature_file),
+                            valid_feature_object=Feature_extracted_mobilenet_3by3(valid_feature_file))
     """
     vqa = Pruned_lstm_cnn_trainer(input_json, input_h5, input_glove_npy,
                                   train_feature_object=Feature_extracted_mobilenet_1by1(train_feature_file),
@@ -430,4 +443,4 @@ if __name__ == '__main__':
                           normalise=True)
     """
     vqa.model.summary()
-    history = vqa.train_model(output)
+    #history = vqa.train_model(output)
