@@ -49,8 +49,9 @@ def store_results(model_path, input_json, input_h5,
     for i in range(questions.shape[0]):
         img_feat = np.expand_dims(image_features[i], 0).astype(np.float32)
         ques = np.expand_dims(questions[i], 0).astype(np.float32)
-        interpreter.set_tensor(0, ques)
-        interpreter.set_tensor(1, img_feat)
+        print(img_feat.shape)
+        interpreter.set_tensor(2, ques)
+        interpreter.set_tensor(3, img_feat)
         interpreter.invoke()
         answer_index = int(np.argmax(output()))
         answer = dataset['ix_to_ans'][str(answer_index + 1)]
