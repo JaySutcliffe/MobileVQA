@@ -6,6 +6,9 @@ import json
 from cnn import Feature_extracted_mobilenet_1by1
 
 
+# The alignment used from
+# Ching-Yao Chuang. Tensorflow implementation of deeper LSTM+ normalized CNN for visual question answering.
+# Available at https://github.com/chingyaoc/VQA-tensorflow (16/10/2020), 2017.
 def right_align(seq, lengths):
     v = np.zeros(np.shape(seq))
     N = np.shape(seq)[1]
@@ -14,6 +17,7 @@ def right_align(seq, lengths):
     return v
 
 
+# My own alignment aligning to question to left of array
 def align(seq, lengths, max_length=26):
     v = np.zeros((np.shape(seq)[0], max_length))
     for i in range(np.shape(seq)[0]):
@@ -36,6 +40,9 @@ class VQA_data_generator(tf.keras.utils.Sequence):
             self.dataset[key] = d[key]
 
         with h5py.File(self.input_h5, 'r') as hf:
+            # Ching-Yao Chuang. Tensorflow implementation of deeper LSTM+ normalized CNN for visual question answering.
+            # Available at https://github.com/chingyaoc/VQA-tensorflow (16/10/2020), 2017.
+            # Used for retrieving data from h5 file
             temp = hf.get('ques_' + self.mode)
             self.data['questions'] = np.array(temp)
 
@@ -112,6 +119,7 @@ class VQA_data_generator(tf.keras.utils.Sequence):
 
 
 if __name__ == '__main__':
+    # For testing...
     vqa_gen = VQA_data_generator('data/data_prepro.json', 'data/data_prepro.h5', train=False,
                                  feature_object=
                                  Feature_extracted_mobilenet_1by1('D:/Part2Project/val30002.npy'))

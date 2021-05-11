@@ -3,8 +3,10 @@ import re
 import random
 from shutil import copyfile
 
+# File used to load subset of question image pairs to the Android app's asset folder specified
+# in variable location. I did not make this a command line argument since it will never change when set-up.
 if __name__ == '__main__':
-    location = "C:/Users/jaysu/AndroidStudioProjects/MVQA/app/src/main/assets/"
+    location = "C:/Users/.../AndroidStudioProjects/MVQA/app/src/main/assets/"
     with open("data/vqa_raw_test.json") as data_file:
         data = json.load(data_file)
 

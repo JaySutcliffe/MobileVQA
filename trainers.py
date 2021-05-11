@@ -372,7 +372,8 @@ class Full_attention_trainer(Lstm_cnn_trainer):
     def create_model(self):
         """
         Creates a VQA model combining an image and question model
-        :return: Attention VQA model
+        Returns:
+            Attention VQA model
         """
         x = tf.keras.layers.Reshape((9, 1280))(self.image_inputs)
         # x = tf.keras.layers.Dense(512, activation='tanh')(x)
@@ -423,6 +424,7 @@ class Full_attention_trainer(Lstm_cnn_trainer):
 
 
 if __name__ == '__main__':
+    # Just some testing examples,
     input_json = "data/data_prepro.json"
     input_h5 = "data/data_prepro.h5"
     input_glove_npy = "D:/Part2Project/word_embeddings.npy"
@@ -433,15 +435,10 @@ if __name__ == '__main__':
     output = "D:/Part2Project/saved_model/lstm_cnn_model"
 
     tf.keras.backend.clear_session()
-    """
-    vqa = Attention_trainer(input_json, input_h5, input_glove_npy,
+
+    vqa = Full_attention_trainer(input_json, input_h5, input_glove_npy,
                             train_feature_object=Feature_extracted_mobilenet_3by3(train_feature_file),
                             valid_feature_object=Feature_extracted_mobilenet_3by3(valid_feature_file))
-    """
-    vqa = Pruned_lstm_cnn_trainer(input_json, input_h5, input_glove_npy,
-                                  train_feature_object=Feature_extracted_mobilenet_1by1(train_feature_file),
-                                  valid_feature_object=Feature_extracted_mobilenet_1by1(valid_feature_file),
-                          normalise=True)
 
     vqa.model.summary()
     history = vqa.train_model(output)

@@ -1,8 +1,9 @@
 """
-Code adapted from https://github.com/chingyaoc/VQA-tensorflow/
-Contributor: Jiasen Lu
+Adapted from...
+Jiasen Lu, Xiao Lin, Dhruv Batra, and Devi Parikh.
+Deeper LSTM and normalized CNN visual question answering model.
+Available at https://github.com/VT-vision-lab/VQA_LSTM_CNN(16/10/2021), 2015.
 """
-
 import json
 import argparse
 

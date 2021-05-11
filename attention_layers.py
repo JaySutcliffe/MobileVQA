@@ -1,7 +1,11 @@
 import tensorflow as tf
 
 
-# Adapted from https://www.tensorflow.org/tutorials/text/transformer 24/2/2021
+# Code from:
+# TensorFlow. Transformer model for language understanding.
+# Available at: https://www.tensorflow.org/tutorials/text/transformer (24/2/2021), 2021.
+# Code below under Apache License 2.0
+##########################################################################################################
 def scaled_dot_product_attention(q, k, v, mask):
     """Calculate the attention weights.
     q, k, v must have matching leading dimensions.
@@ -96,7 +100,8 @@ def point_wise_feed_forward_network(d_model, dff):
         tf.keras.layers.Dense(d_model)  # (batch_size, seq_len, d_model)
     ])
 
-
+##########################################################################################################
+# Rest of code is adapted from code above
 class SelfAttention(tf.keras.layers.Layer):
     """
     My implementation of a self attention layer

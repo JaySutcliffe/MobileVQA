@@ -9,6 +9,8 @@ from data_generator import VQA_data_generator
 # Java library support
 hdf = False
 
+# A file I used to generate mini packets of data to test on the Android application
+# I tested using both h5 and binary files.
 if __name__ == '__main__':
     vqa_gen = VQA_data_generator('data/data_prepro.json', 'data/data_prepro.h5', train=False,
                                  feature_object=

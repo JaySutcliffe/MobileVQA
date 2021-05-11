@@ -13,9 +13,9 @@ def main(input_json, glove_location, output_npy):
         glove_location (str): the location of the GloVe word embeddings
         output_npy (str): the location and file name to store the embedding matrix
 
-    Adapted from code taken from...
-    https://blog.keras.io/using-pre-trained-word-embeddings-in-a-keras-model.html
-    on 17/02/2021
+    Adapted code from...
+    Francois Chollet.  Using pre-trained word embeddings in a keras model.
+    https://blog.keras.io/using-pre-trained-word-embeddings-in-a-keras-model.html [Accessed 17/2/2021], 7 2016.
     """
     embeddings_index = {}
 

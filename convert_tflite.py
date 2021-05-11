@@ -6,6 +6,9 @@ from data_generator import VQA_data_generator
 if __name__ == '__main__':
     input_json = "data/data_prepro.json"
     input_h5 = "data/data_prepro.h5"
+    # Example values found it more convenient to just edit code than set up file as a script
+    # This was simply to experiment with Int8 optimisation rather to generate any necessary
+    # files.
     train_feature_file = "D:/Part2Project/train30002.npy"
     output = "D:/Downloads/lstm_cnn_model2"
     vqa_gen = VQA_data_generator(input_json, input_h5, train=False,

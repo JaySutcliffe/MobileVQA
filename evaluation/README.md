@@ -1,5 +1,6 @@
 Python API and Evaluation Code for v2.0 and v1.0 releases of the VQA dataset.
 ===================
+Aishwarya Agrawal. VQA. Available at https://github.com/GT-Vision-Lab/VQA (6/3/2021), 2017.
 ## VQA v2.0 release ##
 This release consists of
 - Real 

@@ -6,11 +6,20 @@ import os
 
 
 def kb_to_mb(arr):
+    """
+    Converts an array in MB to KB
+
+    Parameters:
+        arr (int array): array entered
+    """
     for i in range(0, len(arr)):
         arr[i] = arr[i] / 1024
 
 
 def size_bar_chart():
+    """
+    Creates bar charts to represent the various model sizes
+    """
     base_sizes = [65726, 32693, 14429]
     kb_to_mb(base_sizes)
     pruned_sizes = [41351, 21463, 9447]
@@ -47,6 +56,12 @@ def size_bar_chart():
 
 
 def box_plots(directory):
+    """
+    Creates box plots of all the results taken from device in a given directory
+
+    Parameters:
+        directory (string): the directory of the box plots
+    """
     data = {"cnn_inference_times": [],
             "nlp_inference_times": [],
             "cpu_usages": []}
@@ -130,7 +145,10 @@ def box_plots(directory):
 
 def main(input_json):
     """
-    Displays the usage of a particular input file.
+    Displays the usage of a particular input file
+
+    Parameters:
+        input_json (str): json file
     """
     with open(input_json) as data_file:
         data = json.load(data_file)
@@ -192,7 +210,7 @@ def main(input_json):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--input_directory', default='device_results2',
+    parser.add_argument('--input_directory', default='device_results',
                         help='directory of all files for box plots')
     parser.add_argument('--input_name', default='Base.json',
                         help='target file name')

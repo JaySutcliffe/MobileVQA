@@ -5,6 +5,10 @@ import tensorflow as tf
 from data_generator import align, VQA_data_generator
 
 
+# The only code I took from
+# Doyup Lee. Unofficial tensorflow implementation of ”bottom-up and top-down attention for VQA” (tf v.1.13).
+# Avaliable at https://github.com/LeeDoYup/bottom-up-attention-tf (16/10/2020), 2020
+# It takes in the number of occurrences and calculates the soft score
 def soft_score(occurrences):
     if occurrences == 0:
         return 0
@@ -75,6 +79,9 @@ class VQA_soft_data_generator(VQA_data_generator):
             self.dataset[key] = d[key]
 
         with h5py.File(self.input_h5, 'r') as hf:
+            # Ching-Yao Chuang. Tensorflow implementation of deeper LSTM+ normalized CNN for visual question answering.
+            # Available at https://github.com/chingyaoc/VQA-tensorflow (16/10/2020), 2017.
+            # Used for retrieving data from h5 file
             temp = hf.get('ques_' + self.__mode)
             self.data['questions'] = np.array(temp)
 

@@ -2,6 +2,8 @@ import tensorflow as tf
 
 from cnn import get_mobilenet_v2_3by3, get_mobilenet_v2
 
+# Code to convert various MobileNet models
+
 
 def convert_mobilenet(output_file):
     converter = tf.lite.TFLiteConverter.from_keras_model(get_mobilenet_v2())
