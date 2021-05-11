@@ -30,6 +30,7 @@ class Lstm_cnn_trainer():
     learning_rate = 0.0003
     dropout_rate = 0.2
 
+    image_inputs = tf.keras.Input(shape=(image_feature_size,))
     question_inputs = tf.keras.Input(shape=(max_question_length,))
 
     def set_embedding_matrix(self, input_glove_npy):
@@ -116,7 +117,6 @@ class Lstm_cnn_trainer():
     def __init__(self, input_json, input_h5, input_glove_npy,
                  train_feature_object,
                  valid_feature_object, normalise=False, vgg19=False):
-        self.image_inputs = tf.keras.Input(shape=(self.image_feature_size,))
         self.train_generator = VQA_data_generator(
             input_json, input_h5, feature_object=train_feature_object,
             batch_size=self.batch_size)
@@ -236,8 +236,8 @@ class Soft_lstm_cnn_trainer(Lstm_cnn_trainer):
 
 
 class Attention_trainer(Lstm_cnn_trainer):
-    dense_hidden_size = 1024
     image_inputs = tf.keras.Input(shape=(3, 3, 1280))
+    question_inputs = tf.keras.Input(shape=(26,))
 
     def create_model(self):
         """
@@ -292,6 +292,7 @@ class Soft_attention_trainer(Lstm_cnn_trainer):
     output_size = 3000
     dense_hidden_size = 512
     image_inputs = tf.keras.Input(shape=(3, 3, 1280))
+    question_inputs = tf.keras.Input(shape=(26,))
 
     def create_model(self):
         """
@@ -432,7 +433,7 @@ if __name__ == '__main__':
     output = "D:/Part2Project/saved_model/lstm_cnn_model"
 
     tf.keras.backend.clear_session()
-
+    """
     vqa = Attention_trainer(input_json, input_h5, input_glove_npy,
                             train_feature_object=Feature_extracted_mobilenet_3by3(train_feature_file),
                             valid_feature_object=Feature_extracted_mobilenet_3by3(valid_feature_file))
@@ -441,6 +442,6 @@ if __name__ == '__main__':
                                   train_feature_object=Feature_extracted_mobilenet_1by1(train_feature_file),
                                   valid_feature_object=Feature_extracted_mobilenet_1by1(valid_feature_file),
                           normalise=True)
-    """
+
     vqa.model.summary()
-    #history = vqa.train_model(output)
+    history = vqa.train_model(output)

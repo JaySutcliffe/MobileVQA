@@ -5,33 +5,41 @@ import matplotlib.pyplot as plt
 import os
 
 
+def kb_to_mb(arr):
+    for i in range(0, len(arr)):
+        arr[i] = arr[i] / 1024
+
+
 def size_bar_chart():
     base_sizes = [65726, 32693, 14429]
+    kb_to_mb(base_sizes)
     pruned_sizes = [41351, 21463, 9447]
+    kb_to_mb(pruned_sizes)
     attention_sizes = [309906, 152429, 76982]
+    kb_to_mb(attention_sizes)
 
     x_names = ["Base", "F16", "Dynamic"]
 
     idxs = np.arange(len(base_sizes))
 
-    plt.xlabel("Model Types")
-    plt.ylabel("Model Size(KB)")
-
     width = 0.4
+    
+    plt.xlabel("Model Types")
+    plt.ylabel("Model Size(MB)")
     plt.bar(idxs, base_sizes, width, label='Base')
     plt.bar(idxs + width, pruned_sizes, width, label='Pruned')
 
-    plt.ylabel("Model Size (KB)")
+    plt.ylabel("Model Size (MB)")
     plt.title("Comparison Of Various Compressed Model Sizes")
     plt.xticks(idxs + width / 2, x_names)
     plt.legend(loc='best')
     plt.show()
 
     plt.xlabel("Model Types")
-    plt.ylabel("Model Size(KB)")
+    plt.ylabel("Model Size(MB)")
     plt.bar(idxs, base_sizes, width, label='Base')
     plt.bar(idxs + width, attention_sizes, width, label='Attention', color='r')
-    plt.ylabel("Model Size (KB)")
+    plt.ylabel("Model Size (MB)")
     plt.title("Comparison Of Base And Attention Model Sizes")
     plt.xticks(idxs + width / 2, x_names)
     plt.legend(loc='best')
@@ -47,9 +55,9 @@ def box_plots(directory):
         with open(entry.path) as data_file:
             entries.append(os.path.basename(entry).split('.')[0])
             item = json.load(data_file)
-            data["cnn_inference_times"].append(item["cnn_inference_time"][60:400])
-            data["nlp_inference_times"].append(item["nlp_inference_time"][60:400])
-            data["cpu_usages"].append(item["cpu_usage"][60:400])
+            data["cnn_inference_times"].append(item["cnn_inference_time"][60:200])
+            data["nlp_inference_times"].append(item["nlp_inference_time"][60:200])
+            data["cpu_usages"].append(item["cpu_usage"][60:200])
             print(entries[i])
             print("cnn: mean = ", np.mean(data["cnn_inference_times"][i]),
                   "std = ", np.std(data["cnn_inference_times"][i]))

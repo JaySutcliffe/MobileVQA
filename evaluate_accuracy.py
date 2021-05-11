@@ -64,7 +64,7 @@ if __name__ == "__main__":
                         help='the path to the json file')
     parser.add_argument('--question_json', default='data/v2_OpenEnded_mscoco_val2014_questions.json',
                         help='the path to the h5 file')
-    parser.add_argument('--result_json', default='D:/Downloads/basic_attention_vqa.tflite',
+    parser.add_argument('--result_json', default='data/test_results2.json',
                         help='the path to the tne Tensorflow Lite model')
     parser.add_argument('--result_type', default='basic_attention',
                         help='the name of the model used')

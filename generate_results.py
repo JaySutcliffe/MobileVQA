@@ -40,18 +40,17 @@ def store_results(model_path, input_json, input_h5,
     data['questions'] = align(data['questions'], data['length_q'], max_length=max_length)
 
     questions = np.array(data['questions'])
-    image_features = np.array([feat_object.get(i) for i in data['img_list']])
+    #image_features = np.array([feat_object.get(i) for i in data['img_list']])
 
     interpreter = tf.lite.Interpreter(model_path=model_path)
     output = interpreter.tensor(interpreter.get_output_details()[0]["index"])
     interpreter.allocate_tensors()
 
     for i in range(questions.shape[0]):
-        img_feat = np.expand_dims(image_features[i], 0).astype(np.float32)
+        img_feat = np.expand_dims(feat_object.get(data['img_list'][i]), 0).astype(np.float32)
         ques = np.expand_dims(questions[i], 0).astype(np.float32)
-        print(img_feat.shape)
-        interpreter.set_tensor(2, ques)
-        interpreter.set_tensor(3, img_feat)
+        interpreter.set_tensor(1, ques)
+        interpreter.set_tensor(0, img_feat)
         interpreter.invoke()
         answer_index = int(np.argmax(output()))
         answer = dataset['ix_to_ans'][str(answer_index + 1)]
@@ -112,7 +111,7 @@ if __name__ == "__main__":
     parser.add_argument('--input_h5', default='data/data_prepro.h5',
                         help='the path to the h5 file')
     parser.add_argument('--model_path',
-                        default='D:/Downloads/basic_attention_vqa.tflite',
+                        default='D:/Downloads/basic_attention_vqa2.tflite',
                         help='the path to the tne Tensorflow Lite mod')
     parser.add_argument('--feature_file', default='D:/Part2Project/val_new.npy',
                         help='the file containing the test images')
